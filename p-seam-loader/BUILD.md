@@ -71,19 +71,13 @@ The binary generation contains the date and the build num of the created binary.
 
 The date and the build num can be extracted by calling seamldr.info (SEAMCALL leaf 0x8000000000000000) on production SEAM-Loader, and taking the values of "build_date" and "build_num" fields in SEAMLDRINFO_STRUCT.
 
-In order to reproduce the exact binary, it is required to include the origin date, and the build number:
+1) In order to reproduce the exact binary, it is required to include the origin date, and the build number:
 
 ```bash
 make RELEASE=1 PSEAMLDR_BUILD_DATE=20240130 PSEAMLDR_BUILD_NUM=212
 ```
 
 Build output files (pseamldr.so and pseamldr.so.consts) for NP-SEAM-Loader build will be produced in ./bin/release folder.
-
-1) Build the project: 
-
-```bash
-make RELEASE=1
-```
 	
 2) Clean everything:
  
