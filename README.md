@@ -14,11 +14,11 @@ The persistent SEAM loader (P-SEAMLDR), which provides function to load and upda
 P-SEAMLDR is a special SEAM module, loaded into P_SEAMLDR_RANGE by NP-SEAMLDR, and invoked by VMM using the SEAMCALL instruction.
 It is designed to follow the steps below to load or update an Intel TDX module into the MODULE_RANGE:
 
-    1. Verify input parameters, including the Intel TDX module's signature structure.
-    2. Load the Intel TDX module image into the MODULE_RANGE, measure it and verify the measurement matches with the signature structure.
-    3. Set up all the relevant regions and SEAM transfer VMCSs for all logical processors.
-    4. Record the Intel TDX module identity into CPU measurement registers and update its load status.
-    5. Return to VMM using the SEAMRET instruction.
+1. Verify input parameters, including the Intel TDX module's signature structure.
+2. Load the Intel TDX module image into the MODULE_RANGE, measure it and verify the measurement matches with the signature structure.
+3. Set up all the relevant regions and SEAM transfer VMCSs for all logical processors.
+4. Record the Intel TDX module identity into CPU measurement registers and update its load status.
+5. Return to VMM using the SEAMRET instruction.
 
 For more details, refer - https://www.intel.com/content/www/us/en/developer/tools/trust-domain-extensions/documentation.html "Intel TDX Loader Interface Specification"
 
