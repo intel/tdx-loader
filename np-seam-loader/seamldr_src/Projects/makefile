@@ -1,0 +1,1 @@
+!include ..\Core\Build\projectdir.incl

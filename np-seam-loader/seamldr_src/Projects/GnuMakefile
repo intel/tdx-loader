@@ -1,0 +1,791 @@
+# Copyright (C) 2023 Intel Corporation                                          
+#                                                                               
+# Permission is hereby granted, free of charge, to any person obtaining a copy  
+# of this software and associated documentation files (the "Software"),         
+# to deal in the Software without restriction, including without limitation     
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,      
+# and/or sell copies of the Software, and to permit persons to whom             
+# the Software is furnished to do so, subject to the following conditions:      
+#                                                                               
+# The above copyright notice and this permission notice shall be included       
+# in all copies or substantial portions of the Software.                        
+#                                                                               
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
+# OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
+# OR OTHER DEALINGS IN THE SOFTWARE.                                            
+#                                                                               
+# SPDX-License-Identifier: MIT
+
+THIS_MAKEFILE = $(lastword $(MAKEFILE_LIST))
+
+
+include $(ACM_ROOT_DIR)/tools/os_defs.mk
+include $(ACM_ROOT_DIR)/tools/msvc_defs.mk
+
+# "starting vars" takes a snapshot of all the currently-defined env variables
+# If we dump all the vars to debug the makefile, STARTING_VARS will be filtered out
+STARTING_VARS := $(.VARIABLES)
+ifneq ($(filter verbose,$(MAKECMDGOALS)),)
+Q :=
+else
+Q = @
+endif
+
+
+ifneq (,$(findstring /Client/,$(PROJECT_DIR)))
+PLATFORM := CLIENT
+else
+PLATFORM := SERVER
+endif
+
+# First we will do some parsing of the command line and set build variables as
+# appropriate
+#
+
+# Biosac or Sinit?
+#
+ifneq ($(filter biosacx,$(MAKECMDGOALS)),)
+ifeq ($(PLATFORM),SERVER)
+ACM     := BIOSACX
+ACM_DIR := BiosacX
+ACM_H   := BiosacX.h
+else
+$(error "Please use biosac to build client projects")
+endif
+else
+ifneq ($(filter biosac,$(MAKECMDGOALS)),)
+ifeq ($(PLATFORM),CLIENT)
+ACM     := BIOSAC
+ACM_DIR := Biosac
+ACM_H   := Biosac.h
+else
+$(error "Please use biosacx to build server projects")
+endif
+else
+ifneq ($(filter sinit,$(MAKECMDGOALS)),)
+ACM     := SINIT
+ACM_DIR := Sinit
+ACM_H   := Sinit.h
+endif
+endif
+endif
+
+ifneq ($(filter npseamldr,$(MAKECMDGOALS)),)
+ACM     := NP_SEAMLDR
+ACM_DIR := Seamldr
+ACM_H   := NpSeamldr.h
+$(info Building NP-SEAMLDR )
+
+$(shell FOR /F "usebackq" %%A IN ('pseamldr.so') DO (echo #define PSEAMLDR_SIZE %%~zA > PSeamldrSize.h))
+#PSEAMLDR_SIZE:=$(dir)
+#echo $(PSEAMLDR_SIZE) > PSeamldrSize.equ
+#$(info Pseamldr $(PSEAMLDR_SIZE))
+
+#FOR /F "usebackq" %%A IN ('pseamldr.so') DO (
+#	rem set PSEAMLDRSIZE=%%~zA 
+#	echo PSEAMLDR_SIZE EQU %%~zA > PSeamldrSize.equ 
+#)
+endif
+
+
+
+# Default build mode (Debug/Engineering)
+#
+ifneq ($(filter release,$(MAKECMDGOALS)),)
+ENG_STRING := REL
+ENG_FLAG   := 0
+trace      ?= off
+opt        ?= on
+LINKER_DEBUG_FLAG = 
+STACK_PROT_FLAG := -GS
+WARNINGS_CFLAGS := -Wall -wd4255 -wd4200 -wd4201 -wd4214
+else
+ENG_STRING := ENG
+ENG_FLAG   := 1
+trace      ?= on
+opt        ?= on
+STACK_PROT_FLAG := -GS-
+LINKER_DEBUG_FLAG = -DEBUG
+WARNINGS_CFLAGS := -W3
+endif
+
+# Enable or disable trace output
+#
+ifeq ($(trace),on)
+TR_STRING := TR
+TR_FLAG   := 1
+TR_FUN_FLAG := 0x74
+else
+TR_STRING := NT
+TR_FLAG   := 0
+TR_FUN_FLAG := 0
+endif
+
+# Enable or disable code optimization (compiler setting)
+#
+ifeq ($(opt),on)
+OPT_STRING := O1
+OPT_FLAG   := -O1 -Ob1 -Zo-
+else
+OPT_STRING := OD
+OPT_FLAG   := -Od
+endif
+
+# User can pass in a value to be be passed to PE2BIN tool (rev=<value>)
+# Optional
+rev ?=
+ACM_USER_REV = $(rev)
+
+# User can pass in value ACMBINSIZE from Makeflag.mak file
+# Optional
+
+ ACMLEN = $(ACMBINSIZE)
+
+###############################################################################
+# Define variables for input and output directories, file names, etc
+#
+
+# The PROJECT variable comes from a each project's project.mak file
+ACM_NAME   = $(PROJECT)_$(ACM)_$(ENG_STRING)_$(TR_STRING)_$(OPT_STRING)
+ACM64_NAME = $(PROJECT)_$(ACM)64_$(ENG_STRING)_$(TR_STRING)_$(OPT_STRING)
+
+ACM_ENTRYPOINT  = AcmEntryPoint
+ACM64_ENTRYPOINT= Entry64
+
+# DIRECTORY Variables
+#
+ACM_DIR            := $(PROJECT_DIR)/$(ACM_DIR)
+ACM_TOOLS_PATH     := $(ACM_ROOT_DIR)/ACMTOOLS
+CORE_DIR           := $(ACM_ROOT_DIR)/Core
+INCLUDE_DIR        := $(CORE_DIR)/include
+
+IPP_SRC_DIR        := $(CORE_DIR)/Crypto/Ipp/Ippcp
+
+CLIENT_CORE_DIR    := $(ACM_ROOT_DIR)/Core/Client
+CLIENT_INCLUDE_DIR := $(CLIENT_CORE_DIR)/include
+
+SERVER_CORE_DIR    := $(ACM_ROOT_DIR)/Core/Server
+SERVER_INCLUDE_DIR := $(SERVER_CORE_DIR)/include
+
+OUT_DIR       := $(ACM_DIR)/output
+OBJ_DIR       := $(OUT_DIR)/$(ENG_STRING)_$(TR_STRING)_$(OPT_STRING)
+LIB_DIR       := $(OBJ_DIR)
+
+CORE_LIB      := $(LIB_DIR)/CORE_$(ENG_STRING)_$(TR_STRING).LIB
+CLIENT_LIB    := $(LIB_DIR)/CLIENT_$(ENG_STRING)_$(TR_STRING).LIB
+CLIENT64_LIB  := $(LIB_DIR)/CLIENT64_$(ENG_STRING)_$(TR_STRING).LIB
+IPP_LIB       := $(LIB_DIR)/IPP_$(ENG_STRING)_$(TR_STRING).LIB
+
+SERVER_LIB    := $(LIB_DIR)/SERVER_$(ENG_STRING)_$(TR_STRING).LIB
+SERVER64_LIB  := $(LIB_DIR)/SERVER64_$(ENG_STRING)_$(TR_STRING).LIB
+
+ACM_EXE       := $(OBJ_DIR)/$(ACM_NAME).exe
+ACM64_EXE     := $(OBJ_DIR)/$(ACM64_NAME).exe
+
+ACM_BIN       := $(OBJ_DIR)/$(ACM_NAME).bin
+
+STYLETOOL     := $(ACM_ROOT_DIR)/Tools/uncrustify.exe
+STYLECFG      := $(ACM_ROOT_DIR)/Tools/acm_coding_std.cfg
+
+IPP_EXCLUDE_SRC  := $(IPP_SRC_DIR)/eces_acm.c
+
+ifndef SEAMLDR_SIMICS_BUILD
+SIMICS_BLD := 0
+endif
+
+###############################################################################
+# Flags for compiling, assembling, linking, etc'ing
+#
+CDEFINES =  -D_ARCH_IA32=1 \
+            -D_IPP_LE=1 \
+            -D_TXT_ACM_=1 \
+            -DMKF_ENGINEERING=$(ENG_FLAG) \
+            -DMKF_TRACE=$(TR_FLAG) \
+            -DMKF_USE_MAKEFLAG_H=1 
+			
+			
+CFLAGS       = -nologo -WX -FAscu -Oy- -Zp1  -Gy $(STACK_PROT_FLAG) $(CDEFINES) $(OPT_FLAG) $(WARNINGS_CFLAGS)
+ASM_FLAGS    = -nologo -WX -Zi -coff -Cx $(CDEFINES) -D__ASM__=1 -Sa -DACM_TYPE=$(ACM_TYPE)
+NASM_FLAGS   = -f win32 -g -w+all -Werror -L+ -s -Xvc $(CDEFINES) -d__ASM__=1 -dACM_TYPE=$(ACM_TYPE) 
+ASM64_FLAGS  = -nologo -Cx -WX -Zi -D__ASM__=1 -DMKF_ENGINEERING=$(ENG_FLAG) -DACM_TYPE=$(ACM_TYPE)
+NASM64_FLAGS = -f win64 -w+all -Werror -L+ -s -Xvc -d__ASM__=1 -dMKF_ENGINEERING=$(ENG_FLAG) -dACM_TYPE=$(ACM_TYPE)
+
+
+
+
+# Include the ACM-specific options/flags
+include $(ACM_DIR)/Makeflag.mak
+
+#Feature control flags
+
+ifdef MKF_DUAL_SIGNING_EN
+CDEFINES += -DMKF_DUAL_SIGNING_EN=$(MKF_DUAL_SIGNING_EN)
+endif
+
+CDEFINES += -DSIMICS_BLD=$(SIMICS_BLD)
+
+ifndef MKF_TPR_SUPPORTED
+MKF_TPR_SUPPORTED=0
+endif
+CDEFINES += -DTPR_SUPPORTED=$(MKF_TPR_SUPPORTED)
+
+ifndef MKF_IBL_SUPPORTED
+MKF_IBL_SUPPORTED=0
+endif
+CDEFINES += -DMKF_IBL_SUPPORTED=$(MKF_IBL_SUPPORTED)
+
+ifndef MKF_SHADOW_STACK_SUPPORT
+MKF_SHADOW_STACK_SUPPORT = 0
+endif
+
+ifeq ($(MKF_SHADOW_STACK_SUPPORT),1)
+CFLAGS += -Gh -GH
+# shadow stack buffer size is _1kb and saftey margin is 0x10
+MCP_SHADOW_STACK_GAP = 0x410
+else
+MCP_SHADOW_STACK_GAP = 0
+endif
+
+CFLAGS += -DMCP_SHADOW_STACK_GAP=$(MCP_SHADOW_STACK_GAP)
+ASM_FLAGS += -DMCP_SHADOW_STACK_GAP=$(MCP_SHADOW_STACK_GAP)
+NASM_FLAGS += -dMCP_SHADOW_STACK_GAP=$(MCP_SHADOW_STACK_GAP)
+ASM64_FLAGS += -DMCP_SHADOW_STACK_GAP=$(MCP_SHADOW_STACK_GAP)
+NASM64_FLAGS += -dMCP_SHADOW_STACK_GAP=$(MCP_SHADOW_STACK_GAP)
+
+ifeq ($(PLATFORM),SERVER)
+CDEFINES += -DTRACE_WITH_FUNCTIONS=$(TR_FUN_FLAG)
+endif
+
+ifndef MKF_ATOM_SUPPORT
+STACK_GAP=16
+endif
+
+ifdef MKF_ATOM_SUPPORT
+CDEFINES += -DMF_ATOM_SUPPORT=1
+ASM64_FLAGS += -DMF_ATOM_SUPPORT=1
+NASM64_FLAGS += -dMF_ATOM_SUPPORT=1
+ifdef MKF_STACK_GAP
+STACK_GAP=$(MKF_STACK_GAP)
+else
+STACK_GAP=_2KB
+endif
+CDEFINES += -DMSR_CACHE_FLUSH=$(MKF_MSR_CACHE_FLUSH)
+CDEFINES += -DCACHE_FLUSH_CMD=$(MKF_CACHE_FLUSH_CMD)
+ASM64_FLAGS += -DMSR_CACHE_FLUSH=$(MKF_MSR_CACHE_FLUSH)
+NASM64_FLAGS += -dMSR_CACHE_FLUSH=$(MKF_MSR_CACHE_FLUSH)
+ASM64_FLAGS += -DCACHE_FLUSH_CMD=$(MKF_CACHE_FLUSH_CMD)
+NASM64_FLAGS += -dCACHE_FLUSH_CMD=$(MKF_CACHE_FLUSH_CMD)
+endif
+
+# MCP_STACK_GAP and MCP_SHADOW_STACK_GAP is always defined, just with different value
+CDEFINES += -DMCP_STACK_GAP="($(STACK_GAP) + $(MCP_SHADOW_STACK_GAP))"
+ASM64_FLAGS += -DMCP_STACK_GAP="($(STACK_GAP) + $(MCP_SHADOW_STACK_GAP))"
+NASM64_FLAGS += -dMCP_STACK_GAP="($(STACK_GAP) + $(MCP_SHADOW_STACK_GAP))"
+
+LNK_FLAGS    := -DYNAMICBASE \
+                -NOLOGO \
+                -MERGE:ADATA32=EDATA32 \
+                -MERGE:SDATA32=EDATA32 \
+                -MERGE:CODE32=.text \
+                -MERGE:.rdata=.comment \
+                -MERGE:.data=.text \
+                -MERGE:IPPCODE=.text \
+                -base:0 \
+                -LAST:EDATA32 \
+                -LAST:.text \
+                -LAST:.comment \
+                -OPT:REF \
+                -NODEFAULTLIB \
+                -IGNORE:4108 \
+                -IGNORE:4254 \
+                -MAP \
+                $(LINKER_DEBUG_FLAG) \
+                -SUBSYSTEM:native \
+                -LIBPATH:$(LIB_DIR) \
+                -OUT:$(ACM_EXE) \
+                -PDB:$(basename $(ACM_EXE)).pdb \
+                -ENTRY:$(ACM_ENTRYPOINT)
+
+LNK64_FLAGS  := -DYNAMICBASE \
+                -NOLOGO \
+                -MERGE:.rdata=.comment \
+                -base:0 \
+                -LAST:.text \
+                -LAST:.pdata \
+                -LAST:.comment \
+                -OPT:REF \
+                -NODEFAULTLIB \
+                -IGNORE:4108 \
+                -IGNORE:4254 \
+                -MAP \
+                $(LINKER_DEBUG_FLAG) \
+                -SUBSYSTEM:native \
+                -LIBPATH:$(LIB_DIR) \
+                -OUT:$(ACM64_EXE) \
+                -PDB:$(basename $(ACM64_EXE)).pdb \
+                -ENTRY:$(ACM64_ENTRYPOINT)
+
+ACM_PE2BINx_FLAGS := -AcmRevision -AcmFlags
+
+ifneq ($(ACM_USER_REV),)
+ACM_PE2BINx_FLAGS += -AcmUserRev:$(ACM_USER_REV)
+endif
+
+ifeq ($(ACMLEN),256)
+ACM_PE2BINx_FLAGS += -AcmSize:256KB
+endif
+
+REHASH_FLAGS      := -none -sha1 -out:base64
+
+###############################################################################
+# Build lists of include paths
+#
+IPP_INCLUDES     = -I$(CORE_DIR)/Crypto/Ipp/Include -I$(CORE_DIR)/Crypto/Ipp/Ippcp -I$(CORE_DIR)/Crypto/Ipp/Ippcp/asm_ia32 -I$(INCLUDE_DIR) -I$(ACM_DIR)
+
+
+INCLUDES =  -I$(CORE_DIR)/Crypto/Ipp/Include \
+            -I$(CORE_DIR)/Crypto/Ipp/Ippcp \
+            -I$(CORE_DIR)/Crypto/Ipp/Ippcp/asm-ia32 \
+            -I$(CORE_DIR)/include64 \
+            -I$(INCLUDE_DIR) \
+            -I$(INCLUDE_DIR)/ipp \
+            -I$(ACM_DIR) \
+            -I$(OBJ_DIR) \
+            -I$(OBJ_DIR)/core/include \
+            -I$(CORE_DIR)
+
+CLIENT_INCLUDES := $(INCLUDES) -I$(CLIENT_INCLUDE_DIR)
+
+SERVER_INCLUDES := $(INCLUDES) -I$(SERVER_INCLUDE_DIR)
+
+ifeq ($(PLATFORM),SERVER)
+PROJ_INCLUDES   := $(SERVER_INCLUDES) -I$(ACM_DIR)/../include
+else
+PROJ_INCLUDES   := $(CLIENT_INCLUDES) -I$(ACM_DIR)/../include
+endif
+
+# Fix the paths for the windows/linux slash feud
+INCLUDES        := $(call FixPath, $(INCLUDES))
+IPP_INCLUDES    := $(call FixPath, $(IPP_INCLUDES))
+CLIENT_INCLUDES := $(call FixPath, $(CLIENT_INCLUDES))
+SERVER_INCLUDES := $(call FixPath, $(SERVER_INCLUDES))
+PROJ_INCLUDES   := $(call FixPath, $(PROJ_INCLUDES))
+
+###############################################################################
+# Build list of C and ASM source files
+#
+
+ALL_IPP_C_SRC    := $(filter-out $(IPP_EXCLUDE_SRC),$(call rwildcard,$(IPP_SRC_DIR)/,*.c))
+ALL_IPP_ASM_SRC  := $(call rwildcard,$(IPP_SRC_DIR)/,*.asm)
+ALL_IPP_NASM_SRC  := $(call rwildcard,$(IPP_SRC_DIR)/,*.nasm)
+
+ifneq ($(ACM), NP_SEAMLDR)
+
+# If the top-level makefile wants us to build ALL ipp files, handle that here
+# IPP files needed for Spiral support break when -ALIGN16 is enabled for the linker,
+# so re-enable it for non spiral (i.e. non-custom IPP) builds
+ifeq ($(CUSTOM_IPP_BLD),TRUE)
+$(info Building ALL IPP source files.)
+IPP_C_SRC    = $(ALL_IPP_C_SRC)
+IPP_ASM_SRC  = $(ALL_IPP_ASM_SRC)
+IPP_NASM_SRC  = $(ALL_IPP_NASM_SRC)
+else
+$(info Building IPP.MAK source files.)
+include $(ACM_ROOT_DIR)/Projects/ipp.mak
+LNK_FLAGS   += -ALIGN:16
+LNK64_FLAGS += -ALIGN:16
+endif
+
+else
+IPP_LIB :=
+
+endif #don't build IPP for SEAMLDR
+
+# CLIENT Sorce files
+CLIENT_C_SRC64   := $(call rwildcard,$(CLIENT_CORE_DIR)/,*64.c)
+CLIENT_C_SRC     := $(filter-out $(CLIENT_C_SRC64),$(call rwildcard,$(CLIENT_CORE_DIR)/,*.c))
+all_client_c     := $(CLIENT_C_SRC) $(CLIENT_C_SRC64)
+
+CLIENT_ASM_SRC64 := $(call rwildcard,$(CLIENT_CORE_DIR)/,*64.asm)
+CLIENT_NASM_SRC64 := $(call rwildcard,$(CLIENT_CORE_DIR)/,*64.nasm)
+CLIENT_ASM_SRC   := $(filter-out $(CLIENT_ASM_SRC64),$(call rwildcard,$(CLIENT_CORE_DIR)/,*.asm))
+CLIENT_NASM_SRC   := $(filter-out $(CLIENT_NASM_SRC64),$(call rwildcard,$(CLIENT_CORE_DIR)/,*.nasm))
+all_client_asm   := $(CLIENT_ASM_SRC) $(CLIENT_ASM_SRC64)
+all_client_nasm   := $(CLIENT_NASM_SRC) $(CLIENT_NASM_SRC64)
+
+# SERVER source files
+SERVER_TRACE_FILTER := $(SERVER_TRACE_FILTER) $(call rwildcard,$(SERVER_CORE_DIR)/Trace,*.c)
+ifeq ($(trace),on)
+SERVER_TRACE_FILTER = 
+endif
+SERVER_C_SRC64   := $(call rwildcard,$(SERVER_CORE_DIR)/,*64.c)
+SERVER_C_SRC     := $(filter-out $(SERVER_C_SRC64) $(SERVER_TRACE_FILTER), $(call rwildcard,$(SERVER_CORE_DIR)/,*.c))
+$(info SERVER_C_SRC $(SERVER_C_SRC64))
+
+SERVER_ASM_SRC64 := $(call rwildcard,$(SERVER_CORE_DIR)/,*64.asm)
+SERVER_NASM_SRC64 := $(call rwildcard,$(SERVER_CORE_DIR)/,*64.nasm)
+SERVER_ASM_SRC   := $(filter-out $(SERVER_ASM_SRC64),$(call rwildcard,$(SERVER_CORE_DIR)/,*.asm))
+SERVER_NASM_SRC   := $(filter-out $(SERVER_NASM_SRC64),$(call rwildcard,$(SERVER_CORE_DIR)/,*.nasm))
+
+NON_CORE_C       := $(ALL_IPP_C_SRC) $(CLIENT_C_SRC) $(CLIENT_C_SRC64) $(SERVER_C_SRC) $(SERVER_C_SRC64)
+$(info NONE_CORE_C $(NON_CORE_C))
+
+NON_CORE_ASM     := $(ALL_IPP_ASM_SRC) $(CLIENT_ASM_SRC) $(CLIENT_ASM_SRC64) $(SERVER_ASM_SRC) $(SERVER_ASM_SRC64)
+NON_CORE_NASM     := $(ALL_IPP_NASM_SRC) $(CLIENT_NASM_SRC) $(CLIENT_NASM_SRC64) $(SERVER_NASM_SRC) $(SERVER_NASM_SRC64)
+
+# CORE Source Files = all_sources minus client_sources
+CORE_TRACE_FILTER := $(call rwildcard,$(CORE_DIR)/Trace,*.c)
+CORE_TRACE_FILTER := $(CORE_TRACE_FILTER) $(call rwildcard,$(SERVER_CORE_DIR)/Trace,*.c)
+ifeq ($(trace),on)
+CORE_TRACE_FILTER = 
+endif
+
+CORE_C_SRC64     := $(filter-out $(NON_CORE_C), $(call rwildcard,$(CORE_DIR)/,*64.c))
+CORE_C_SRC       := $(filter-out $(IPP_EXCLUDE_SRC) $(NON_CORE_C) $(CORE_C_SRC64) $(CORE_TRACE_FILTER), $(call rwildcard,$(CORE_DIR)/,*.c))
+CORE_ASM_SRC64   := $(filter-out $(NON_CORE_ASM), $(call rwildcard,$(CORE_DIR)/,*64.asm))
+CORE_NASM_SRC64   := $(filter-out $(NON_CORE_NASM), $(call rwildcard,$(CORE_DIR)/,*64.nasm))
+CORE_ASM_SRC     := $(filter-out $(NON_CORE_ASM) $(CORE_ASM_SRC64), $(call rwildcard,$(CORE_DIR)/,*.asm))
+CORE_NASM_SRC     := $(filter-out $(NON_CORE_NASM) $(CORE_NASM_SRC64), $(call rwildcard,$(CORE_DIR)/,*.nasm))
+
+# PROJECT Source Files
+PROJ_C_SRC64     := $(call rwildcard,$(ACM_DIR)/,*64.c)
+PROJ_C_SRC       := $(filter-out $(PROJ_C_SRC64),$(wildcard $(ACM_DIR)/*.c))
+PROJ_C_SRC       += $(call rwildcard,$(ACM_DIR)/../Common/,*.c)
+
+PROJ_ASM_SRC64   := $(call rwildcard,$(ACM_DIR)/,*64.asm)
+PROJ_NASM_SRC64   := $(call rwildcard,$(ACM_DIR)/,*64.nasm)
+PROJ_ASM_SRC     := $(filter-out $(PROJ_ASM_SRC64),$(call rwildcard,$(ACM_DIR)/,*.asm))
+PROJ_NASM_SRC     := $(filter-out $(PROJ_NASM_SRC64),$(call rwildcard,$(ACM_DIR)/,*.nasm))
+
+# Object files to be built
+CORE_C_OBJ       := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(CORE_C_SRC))
+CORE_C_OBJ64       := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(CORE_C_SRC64))
+CORE_ASM_OBJ     := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(CORE_ASM_SRC))
+CORE_NASM_OBJ     := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(CORE_NASM_SRC))
+CORE_ASM_OBJ64     := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(CORE_ASM_SRC64))
+CORE_NASM_OBJ64     := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(CORE_NASM_SRC64))
+
+IPP_C_OBJ        := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(IPP_C_SRC))
+IPP_ASM_OBJ      := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(IPP_ASM_SRC))
+IPP_NASM_OBJ      := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(IPP_NASM_SRC))
+
+ifeq ($(PLATFORM),SERVER)
+SERVER_C_OBJ     := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(SERVER_C_SRC))
+SERVER_C_OBJ64   := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(SERVER_C_SRC64))
+SERVER_ASM_OBJ   := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(SERVER_ASM_SRC))
+SERVER_NASM_OBJ   := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(SERVER_NASM_SRC))
+SERVER_ASM_OBJ64 := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(SERVER_ASM_SRC64))
+SERVER_NASM_OBJ64 := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(SERVER_NASM_SRC64))
+else
+CLIENT_C_OBJ     := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(CLIENT_C_SRC))
+CLIENT_C_OBJ64   := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(CLIENT_C_SRC64))
+CLIENT_ASM_OBJ   := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(CLIENT_ASM_SRC))
+CLIENT_NASM_OBJ   := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(CLIENT_NASM_SRC))
+CLIENT_ASM_OBJ64 := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(CLIENT_ASM_SRC64))
+CLIENT_NASM_OBJ64 := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(CLIENT_NASM_SRC64))
+endif
+
+PROJ_C_OBJ       := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(PROJ_C_SRC))
+PROJ_C_OBJ64     := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(PROJ_C_SRC64))
+PROJ_ASM_OBJ     := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(PROJ_ASM_SRC))
+PROJ_NASM_OBJ     := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(PROJ_NASM_SRC))
+PROJ_ASM_OBJ64   := $(patsubst $(ACM_ROOT_DIR)/%.asm,$(OBJ_DIR)/%.obj,$(PROJ_ASM_SRC64))
+PROJ_NASM_OBJ64   := $(patsubst $(ACM_ROOT_DIR)/%.nasm,$(OBJ_DIR)/%.obj,$(PROJ_NASM_SRC64))
+
+# SPECIAL: Get the specific path to Header.obj file (needed for weird PE2BIN thing later)
+STACK_C_SRC := $(ACM_DIR)/Stack.c
+STACK_C_OBJ := $(patsubst $(ACM_ROOT_DIR)/%.c,$(OBJ_DIR)/%.obj,$(STACK_C_SRC))
+
+FILES_TO_STYLE  = $(PROJ_C_SRC) $(CORE_C_SRC) $(CLIENT_C_SRC)
+FILES_TO_STYLE += $(call rwildcard,$(PROJECT_DIR)/,*.h)
+FILES_TO_STYLE += $(call rwildcard,$(INCLUDE_DIR)/,*.h)
+FILES_TO_STYLE += $(call rwildcard,$(CLIENT_INCLUDE_DIR)/,*.h)
+
+ALL_OBJS := $(CORE_C_OBJ) $(CORE_ASM_OBJ) $(CORE_NASM_OBJ) $(CORE_C_OBJ64) $(CORE_ASM_OBJ64) $(CORE_NASM_OBJ64)
+ALL_OBJS += $(IPP_C_OBJ) $(IPP_ASM_OBJ) $(IPP_NASM_OBJ)
+ifeq ($(PLATFORM),SERVER)
+ALL_OBJS += $(SERVER_C_OBJ) $(SERVER_C_OBJ64) $(SERVER_ASM_OBJ) $(SERVER_NASM_OBJ) $(SERVER_ASM_OBJ64) $(SERVER_NASM_OBJ64)
+else
+ALL_OBJS += $(CLIENT_C_OBJ) $(CLIENT_C_OBJ64) $(CLIENT_ASM_OBJ) $(CLIENT_NASM_OBJ) $(CLIENT_ASM_OBJ64) $(CLIENT_NASM_OBJ64)
+endif
+ALL_OBJS += $(PROJ_C_OBJ) $(PROJ_C_OBJ64) $(PROJ_ASM_OBJ) $(PROJ_NASM_OBJ)
+
+# Figure out what output directories we'll need to create
+DIRECTORIES := $(sort $(dir $(ALL_OBJS)))
+
+###############################################################################
+# Begin target recipe definitions
+#
+
+ENDING_VARS := $(.VARIABLES)
+# Include the ACM-specific options/flags
+include $(ACM_DIR)/Makeflag.mak
+
+.ONESHELL:
+
+define USAGE
+	$(info Acceptable make targets: )
+	$(info $(SPC)  REQUIRED: "biosac(x)" or "sinit")
+	$(info $(SPC)  Optional: "debug" or "release" [default: debug])
+	$(info $(SPC)  Optional: trace=on|off  enables/disables trace output. [defaults: debug=on, release=off])
+	$(info $(SPC)  Optional: opt=on|off    enables/disables code optimizataion. [defaults: debug=on, release=on])
+	$(info $(SPC)  Optional: verbose       echoes all commands to the shell)
+	$(info $(SPC)  Optional: rev=<value>   Passes a revision value to PE2BIN for binary matching)
+	$(info )
+	$(info $(SPC)  Optional: clean         Cleans build output from the specified target)
+	$(info $(SPC)  Optional: cleanall      Cleans all build output from all build targets)
+	$(info )
+	$(info EXAMPLES:)
+	$(info $(SPC)  Command Line                     Image Type    Mode       Trace   Optimizations)
+	$(info $(SPC)  make biosac(x)                   biosac(x)     debug      ON      OFF)
+	$(info $(SPC)  make sinit release               sinit         release    OFF     ON)
+	$(info $(SPC)  make biosac(x) release trace=on  biosac(x)     release    ON      ON)
+endef
+
+# Recipe to write the above to a file
+.PHONY: clean cleanall vars dirs biosac biosacx npseamldr sinit debug release verbose
+
+
+all help:
+	$(USAGE)
+
+status:
+	$(info BUILD TARGET:)
+	$(info   Project       = $(PROJECT))
+	$(info $(space) ACM Type      = $(ACM))
+	$(info $(space) Mode          = $(ENG_STRING))
+	$(info $(space) Trace         = $(TR_STRING))
+	$(info $(space) Optimizations = $(OPT_STRING))
+	$(info $(space) Revision      = $(ACM_USER_REV))
+	$(info $(space) Output file   = $(OBJ_DIR)/$(ACM_NAME).exe)
+	$(info ====================================)
+
+clean:
+	$(Q)$(RMD) $(call FixPath,$(OBJ_DIR) 2> nul)
+	$(Q)$(RM) $(call FixPath,$(ACM_DIR)/Makeflag.auto $(ACM_DIR)/Makeflag.h $(INC_LIST) 2> nul)
+	$(info Clean complete.)
+
+cleanall:
+	$(Q)$(RMD) $(call FixPath,$(OUT_DIR) 2> nul)
+	$(Q)$(RM) $(call FixPath,$(ACM_DIR)/Makeflag.auto $(ACM_DIR)/Makeflag.h $(INC_LIST) 2> nul)
+	$(info Clean complete.)
+
+# Recipe to dump all the variables created between STARTING_VARS and ENDING_VARS
+#
+vars:
+	$(foreach v, $(sort $(filter-out $(STARTING_VARS) STARTING_VARS,$(ENDING_VARS))), \
+	  $(info => $(v) = $($(v))))
+
+# Recipe to create all the output folders. Doing all at once saves lots of time
+#
+directories:
+	$(foreach dir,$(DIRECTORIES),$(shell $(call FixPath,$(IFNOTEXISTDIR) $(dir) $(ENDIFNOTEXISTDIR) $(MKD) $(dir))))
+
+# If we're doing a clean or cleanall, don't build a binary
+#
+ifeq ($(filter clean cleanall,$(MAKECMDGOALS)),)
+biosacx: status $(ACM_BIN)
+biosac: status $(ACM_BIN)
+sinit: status $(ACM_BIN)
+npseamldr: status $(ACM_BIN)
+endif
+
+# Special rule for text_alignment_padding file
+%/text_alignment_padding.h:
+	$(Q)$(file >$@,#define text_alignment_padding 0)
+
+# Rule that creates the makeflag header file
+$(ACM_DIR)/Makeflag.h $(ACM_DIR)/Makeflag.auto: $(ACM_DIR)/Makeflag.mak $(THIS_MAKEFILE)
+	$(Q)$(file >$@,$(MAKEFLAG_AUTO))
+
+
+# Rules to make object files from Source (c and asm) files
+#
+
+$(OBJ_DIR)/%.obj : $(ACM_ROOT_DIR)/%.c $(ACM_DIR)/Makeflag.auto
+	$(Q)$(CL) -c $(CFLAGS) $(PROJ_INCLUDES) -Fa$(@:.obj=.cod) -Fd$(@:.obj=.pdb) -Fo$@ $<
+
+$(OBJ_DIR)/%.obj : $(ACM_ROOT_DIR)/%.nasm $(INC_LIST)
+	$(info ==> Assembling nasm file: $< <==)
+	$(Q)$(NASM) $< $(NASM_FLAGS) $(PROJ_INCLUDES) -l$(@:.obj=.lst) -o $@
+
+$(OBJ_DIR)/%.obj : $(ACM_ROOT_DIR)/%.asm $(INC_LIST)
+	$(Q)$(ML) -c $(ASM_FLAGS) $(PROJ_INCLUDES) -Fl$(@:.obj=.lst) -Fo$@ $<
+
+# Rule to generate the core library file. LIB file is consumed when we link later
+#
+$(CORE_LIB): $(CORE_C_OBJ) $(CORE_ASM_OBJ) $(CORE_NASM_OBJ) $(OBJ_DIR)/text_alignment_padding.h
+	$(info ==> Building 32-bit Core Library: $@ <==)
+	$(Q)$(file >$(OBJ_DIR)/coreobjs.tmp,$(sort $(CORE_C_OBJ) $(CORE_ASM_OBJ) $(CORE_NASM_OBJ)))
+	$(Q)$(LIB) -NOLOGO -OUT:$(CORE_LIB) $(call FixPath,@$(OBJ_DIR)/coreobjs.tmp)
+
+# Rules to make 64-bit core obj files.
+$(CORE_ASM_OBJ64):
+	$(Q)$(ML64) -c $(ASM64_FLAGS) $(PROJ_INCLUDES) -Fl$(@:.obj=.lst) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.asm,$@)
+
+$(CORE_NASM_OBJ64):
+	$(info ==> Assembling nasm file: $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@) <==)
+	$(Q)$(NASM) $(NASM64_FLAGS) $(PROJ_INCLUDES) -l$(@:.obj=.lst) -o$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@)
+
+$(CORE_C_OBJ64):
+	$(Q)$(CL64) -c $(CFLAGS) $(PROJ_INCLUDES) -Fa$(@:.obj=.cod) -Fd$(@:.obj=.pdb) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.c,$@)
+
+# Recipes for making 64-bit client obj files and Client Libraries
+#
+ifeq ($(PLATFORM),SERVER)
+$(SERVER_C_OBJ64):
+	$(Q)$(CL64) -c $(CFLAGS) $(SERVER_INCLUDES) -Fa$(@:.obj=.cod) -Fd$(@:.obj=.pdb) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.c,$@)
+
+$(SERVER_ASM_OBJ64):
+	$(Q)@$(ML64) -c $(ASM64_FLAGS) $(SERVER_INCLUDES) -Fl$(@:.obj=.lst) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.asm,$@)
+
+$(SERVER_NASM_OBJ64):
+	$(info ==> Assembling nasm file: $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@) <==)
+	$(Q)@$(NASM) $(NASM64_FLAGS) $(SERVER_INCLUDES) -l$(@:.obj=.lst) -o$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@)
+
+$(SERVER_LIB) : $(SERVER_C_OBJ) $(SERVER_ASM_OBJ) $(SERVER_NASM_OBJ)
+	$(info ==> Building 32-bit Server Library: $@ <==)
+	$(Q)$(LIB) -NOLOGO -OUT:$(SERVER_LIB) $(SERVER_C_OBJ) $(SERVER_ASM_OBJ) $(SERVER_NASM_OBJ)
+
+$(SERVER64_LIB) : $(SERVER_C_OBJ64) $(SERVER_ASM_OBJ64) $(CORE_ASM_OBJ64) $(SERVER_NASM_OBJ64) $(CORE_NASM_OBJ64) $(CORE_C_OBJ64)
+	$(info ==> Building 64-bit Server Library: $@ <==)
+	$(Q)$(LIB64) -NOLOGO -OUT:$(SERVER64_LIB) $(SERVER_C_OBJ64) $(SERVER_ASM_OBJ64) $(SERVER_NASM_OBJ64) $(CORE_C_OBJ64) $(CORE_ASM_OBJ64) $(CORE_NASM_OBJ64) 
+else
+$(CLIENT_C_OBJ64):
+	$(Q)$(CL64) -c $(CFLAGS) $(CLIENT_INCLUDES) -Fa$(@:.obj=.cod) -Fd$(@:.obj=.pdb) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.c,$@)
+
+$(CLIENT_ASM_OBJ64):
+	$(Q)@$(ML64) -c $(ASM64_FLAGS) $(CLIENT_INCLUDES) -Fl$(@:.obj=.lst) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.asm,$@)
+
+$(CLIENT_NASM_OBJ64):
+	$(info ==> Assembling nasm file: $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@) <==)
+	$(Q)@$(NASM) $(NASM64_FLAGS) $(CLIENT_INCLUDES) -l$(@:.obj=.lst) -o$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@)
+
+$(CLIENT_LIB) : $(CLIENT_C_OBJ) $(CLIENT_ASM_OBJ) $(CLIENT_NASM_OBJ)
+	$(info ==> Building 32-bit Client Library: $@ <==)
+	$(Q)$(LIB) -NOLOGO -OUT:$(CLIENT_LIB) $(CLIENT_C_OBJ) $(CLIENT_ASM_OBJ) $(CLIENT_NASM_OBJ)
+
+$(CLIENT64_LIB) : $(CLIENT_C_OBJ64) $(CLIENT_ASM_OBJ64) $(CORE_ASM_OBJ64) $(CLIENT_NASM_OBJ64) $(CORE_NASM_OBJ64) $(CORE_C_OBJ64)
+	$(info ==> Building 64-bit Client Library: $@ <==)
+	$(Q)$(LIB64) -NOLOGO -OUT:$(CLIENT64_LIB) $(CLIENT_C_OBJ64) $(CLIENT_ASM_OBJ64) $(CLIENT_NASM_OBJ64) $(CORE_C_OBJ64) $(CORE_ASM_OBJ64) $(CORE_NASM_OBJ64)
+
+endif
+
+# IPP Library
+#
+$(IPP_C_OBJ):
+	$(Q)$(CL) -c $(CFLAGS) $(IPP_C_FLAGS) $(IPP_INCLUDES) -Fa$(@:.obj=.cod) -Fd$(@:.obj=.pdb) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.c,$@)
+
+$(IPP_ASM_OBJ):
+	$(Q)$(ML) -c $(ASM_FLAGS) $(IPP_INCLUDES) -Fl$(@:.obj=.lst) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.asm,$@)
+$(IPP_NASM_OBJ):
+	$(info ==> Assembling nasm file: $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@) <==)
+	$(Q)$(NASM) $(NASM_FLAGS) $(IPP_NASM_FLAGS) $(IPP_INCLUDES) -l$(@:.obj=.lst) -o$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@)
+$(IPP_LIB) : $(IPP_C_OBJ) $(IPP_ASM_OBJ) $(IPP_NASM_OBJ)
+	$(info ==> Building 32-bit IPP Library: $@ <==)
+	$(Q)$(file >$(OBJ_DIR)/ippobjs.tmp,$(sort $(IPP_C_OBJ) $(IPP_ASM_OBJ) $(IPP_NASM_OBJ)))
+	$(Q)$(LIB) -NOLOGO -OUT:$(IPP_LIB) $(call FixPath,@$(OBJ_DIR)/ippobjs.tmp)
+
+
+# Recipes for making 64-bit project obj files
+#
+$(PROJ_C_OBJ64) :
+	$(Q)$(CL64) -c $(CFLAGS) $(PROJ_INCLUDES) -Fa$(@:.obj=.cod) -Fd$(@:.obj=.pdb) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.c,$@)
+
+$(PROJ_ASM_OBJ64):
+	$(Q)@$(ML64) -c $(ASM64_FLAGS) $(PROJ_INCLUDES) -Fl$(@:.obj=.lst) -Fo$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.asm,$@)
+$(PROJ_NASM_OBJ64):
+	$(info ==> Assembling nasm file: $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@) <==)
+	$(Q)@$(NASM) $(NASM64_FLAGS) $(PROJ_INCLUDES) -l$(@:.obj=.lst) -o$@ $(patsubst $(OBJ_DIR)/%.obj,$(ACM_ROOT_DIR)/%.nasm,$@)
+
+#
+# Build the EXEs and Binaries, plus all post-processing
+#
+## 32-bit Link (all 32-bit core, client, and project object files)
+ifeq ($(PLATFORM),SERVER)
+$(ACM_EXE): $(CORE_LIB) $(SERVER_LIB) $(IPP_LIB) $(PROJ_C_OBJ) $(PROJ_ASM_OBJ) $(PROJ_NASM_OBJ)
+	$(info ==> Running uncrustify on source files (.c/.h)...)
+	$(Q)$(STYLETOOL) --no-backup -q -c $(STYLECFG) $(FILES_TO_STYLE)
+	$(info ==> Creating $(notdir $@)..........)
+	$(Q)$(LINK) $(LNK_FLAGS) $(SERVER_LIB) $(CORE_LIB) $(IPP_LIB) $(PROJ_C_OBJ) $(PROJ_ASM_OBJ) $(PROJ_NASM_OBJ)
+	$(Q)$(call FixPath,cd $(OBJ_DIR))
+	$(Q)$(ACM_PE2BINx) $(ACM_EXE) -TEXT_Alignment:$(TEXT_ALIGNMENT)
+	$(Q)$(call FixPath,cd $(ACM_DIR))
+ifneq ($(TEXT_ALIGNMENT),0KB)
+	$(info ==> Alignment value is non-zero. Doing "second pass" thing........)
+	$(Q)$(RM) $(call FixPath,$(STACK_C_OBJ))
+	$(Q)$(CL) -c $(CFLAGS) $(PROJ_INCLUDES) -Fa$(STACK_C_OBJ:.obj=.cod) -Fd$(STACK_C_OBJ:.obj=.pdb) -Fo$(STACK_C_OBJ) $(STACK_C_SRC)
+	$(Q)$(LINK) $(LNK_FLAGS) $(SERVER_LIB) $(CORE_LIB) $(IPP_LIB) $(PROJ_C_OBJ) $(PROJ_ASM_OBJ) $(PROJ_NASM_OBJ)
+endif
+	$(Q)$(DUMPBIN) -all -disasm -nologo $(ACM_EXE) -out:$(basename $@)_db.txt
+	$(Q)$(info ==> DONE [Creating $(notdir $@)]..........)
+else
+$(ACM_EXE): $(CORE_LIB) $(CLIENT_LIB) $(IPP_LIB) $(PROJ_C_OBJ) $(PROJ_ASM_OBJ)	$(PROJ_NASM_OBJ)
+	$(info ==> Running uncrustify on source files (.c/.h)...)
+	$(Q)$(STYLETOOL) --no-backup -q -c $(STYLECFG) $(FILES_TO_STYLE)
+	$(info ==> Creating $(notdir $@)..........)
+	$(Q)$(LINK) $(LNK_FLAGS) $(CLIENT_LIB) $(CORE_LIB) $(IPP_LIB) $(PROJ_C_OBJ) $(PROJ_ASM_OBJ) $(PROJ_NASM_OBJ)
+	$(Q)$(call FixPath,cd $(OBJ_DIR))	
+	$(Q)$(ACM_PE2BINx) $(ACM_EXE) -TEXT_Alignment:$(TEXT_ALIGNMENT)
+	$(Q)$(call FixPath,cd $(ACM_DIR))
+ifneq ($(TEXT_ALIGNMENT),0KB)
+	$(info ==> Alignment value is non-zero. Doing "second pass" thing........)
+	$(Q)$(RM) $(call FixPath,$(STACK_C_OBJ))
+	$(Q)$(CL) -c $(CFLAGS) $(PROJ_INCLUDES) -Fa$(STACK_C_OBJ:.obj=.cod) -Fd$(STACK_C_OBJ:.obj=.pdb) -Fo$(STACK_C_OBJ) $(STACK_C_SRC)
+	$(Q)$(LINK) $(LNK_FLAGS) $(CLIENT_LIB) $(CORE_LIB) $(IPP_LIB) $(PROJ_C_OBJ) $(PROJ_ASM_OBJ) $(PROJ_NASM_OBJ)
+endif
+	$(Q)$(DUMPBIN) -all -disasm -nologo $(ACM_EXE) -out:$(basename $@)_db.txt
+	$(Q)$(info ==> DONE [Creating $(notdir $@)]..........)
+endif
+
+
+# 64-bit Link and post-process
+#
+ifeq ($(PLATFORM),SERVER)
+$(ACM64_EXE): $(SERVER64_LIB) $(PROJ_C_OBJ64) $(PROJ_ASM_OBJ64) $(PROJ_NASM_OBJ64)
+	$(info ==> Creating $(notdir $@)..........)
+	$(Q)$(LINK64) $(LNK64_FLAGS) $(PROJ_C_OBJ64) $(PROJ_ASM_OBJ64) $(PROJ_NASM_OBJ64) $(SERVER64_LIB)
+	$(Q)$(DUMPBIN) -all -disasm -nologo $@ -out:$(basename $@)_db.txt
+	$(info ==> DONE [Creating $(notdir $@)]..........)
+else
+$(ACM64_EXE): $(CLIENT64_LIB) $(PROJ_C_OBJ64) $(PROJ_ASM_OBJ64) $(PROJ_NASM_OBJ64)
+	$(info ==> Creating $(notdir $@)..........)
+	$(Q)$(LINK64) $(LNK64_FLAGS) $(PROJ_C_OBJ64) $(PROJ_ASM_OBJ64) $(PROJ_NASM_OBJ64) $(CLIENT64_LIB)
+	$(Q)$(DUMPBIN) -all -disasm -nologo $@ -out:$(basename $@)_db.txt
+	$(info ==> DONE [Creating $(notdir $@)]..........)
+endif
+
+# Generate the final binaries via PE2BIN
+ifeq ($(MKF_64BIT_CODE_SUPPORT),1)
+$(ACM_BIN): directories $(ACM_EXE) $(ACM64_EXE)
+	$(info ==> Creating $(notdir $@)..........)	
+	$(Q)(call py -3 putPseamldr.py $(OBJ_DIR)\$(ACM_NAME).map $(OBJ_DIR)\$(ACM_NAME).exe pseamldr.so pseamldr.so.consts)
+	$(Q)$(call FixPath,cd $(OBJ_DIR))
+	$(Q)$(call FixPath,$(ACM_PE2BINx) $(ACM_PE2BINx_FLAGS) $(ACM_EXE) $@ $ -EXE64bit:$(ACM64_EXE) > $(OBJ_DIR)/build64.log)
+	$(Q)$(call FixPath,type $(OBJ_DIR)/build64.log)
+	$(Q)$(call FixPath,$(REHASH) $(REHASH_FLAGS) $(OBJ_DIR)/*.bin > $(basename $@).base64)
+	$(Q)$(call FixPath,cd $(ACM_DIR))
+	$(Q)$(info ==> DONE [Creating $(notdir $@)]..........)
+else
+$(ACM_BIN): directories $(ACM_EXE)
+	$(info ==> Creating $(notdir $@)..........)
+	$(Q)$(call FixPath,cd $(OBJ_DIR))
+	$(Q)$(call FixPath,$(ACM_PE2BINx) $(ACM_PE2BINx_FLAGS) $(ACM_EXE) $@ $ > $(OBJ_DIR)/build.log)
+	$(Q)$(call FixPath,type $(OBJ_DIR)/build.log)
+	$(Q)$(call FixPath,$(REHASH) $(REHASH_FLAGS) $(OBJ_DIR)/*.bin > $(basename $@).base64)
+	$(Q)$(call FixPath,cd $(ACM_DIR))
+	$(Q)$(info ==> DONE [Creating $(notdir $@)]..........)
+endif
+
+.DEFAULT:
+	$(info )
+	$(info === No rule to build target "$<" ===)
+	$(info )	
+
+support:
+	@echo $(.FEATURES)
+

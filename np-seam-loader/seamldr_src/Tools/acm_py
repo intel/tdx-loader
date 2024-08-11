@@ -1,0 +1,48 @@
+import itpii
+from itpii.datatypes import *
+itp = itpii.baseaccess()
+itp.vp = 0 if not hasattr(itp, 'vp') else itp.vp
+itp.base = 16 if not hasattr(itp, 'base') else itp.base
+
+#****************************************************************************
+#  FUNCTION: SearchACM()
+#
+#  DESCRIPTION: This function takes the current IP and looks back in memory
+#               for the start of the PE32 or VZ32 file. It then cracks the 
+#               file to find the PDB filename, changes it to a ".efi" filename, 
+#               and does a load command to load the module in ITP.
+#
+#  ARGUMENTS:   argvector[0] - current IP
+#*****************************************************************************
+def SearchACM(*argvector):
+    ACMFound=0;
+    Ptr1 = argvector[0x0]
+    itpii.printf ("-----------------------------------------------------------------------------------\n")
+    itpii.printf("Current eip = %s\n",Ptr1)
+    Ptr1 = Ptr1 & 0xfffffc00
+    itpii.printf("1KB aligned pointer = %s\n",Ptr1)
+    LookBackBlockCount = (256*1024/1024)  # size=1256B, block size 1KB
+    DecrementStepSize=1024  #1KB aligned
+    itpii.printf("1KB block count = %s\n",LookBackBlockCount)
+    itpii.printf("\nSearching backwards 256KB for ACM signature...\n")
+    while LookBackBlockCount > 0x0:
+      # Check for bad address
+      if Ptr1 == 0x0:
+        return(0x0)
+      # Look for ACM header and signature
+      #itpii.printf(" ptr1 = 0x%x, char = %s \n", Ptr1, itp.threads[itp.vp].mem(itpii.Address(Ptr1 + 0x1),1))
+      if Ord2(itp.threads[itp.vp].mem(itpii.Address(Ptr1),2)) == 0x0002:
+        if ((Ord4(itp.threads[itp.vp].mem(itpii.Address(Ptr1+0x10),4)) == 0x00008086) and (Ord8(itp.threads[itp.vp].mem(itpii.Address(Ptr1+0x4c0),8)) == 0x18DB46A77FC03AAA)):
+          itpii.printf("ACM Header signature found at: %x\n",Ptr1)
+          itpii.printf ("-----------------------------------------------------------------------------------\n")
+          return(Ptr1)
+      Ptr1 = Ptr1 - DecrementStepSize
+      LookBackBlockCount = LookBackBlockCount - 1
+    itpii.printf ("-----------------------------------------------------------------------------------\n")
+    itpii.printf("ACM Header signature not found (searched backwards for 256KB block)\n")
+    return(0)
+
+def Base(*argvector):
+    eip = itp.threads[0].state.regs.eip
+    ACM_Base=acm.SearchACM(eip)
+    return(0)

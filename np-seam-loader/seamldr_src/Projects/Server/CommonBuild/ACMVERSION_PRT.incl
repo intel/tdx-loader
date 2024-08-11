@@ -1,0 +1,13 @@
+
+#*****************************************************************************
+#
+# Module constant parameters.
+#
+#*****************************************************************************
+BASE_VERSION          = 0x33
+!if $(NPW_ITERATION_PRT) >= 0x4
+!ERROR "NPW_ITERATION_PRT is not less than 4"
+!endif
+!if $(NPW_ITERATION_PRT) <= 0
+!ERROR "NPW_ITERATION_PRT is not greater than 0"
+!endif

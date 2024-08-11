@@ -1,0 +1,435 @@
+#*****************************************************************************
+#
+# Build type selection
+#
+#*****************************************************************************
+!if "$(SFX)"!=""
+USFX=_$(SFX)
+!endif
+
+!if "$(BLD)"=="ENG_NT"
+
+ACM_NAME=$(ACM)_ENG_NT$(USFX)
+
+!elseif "$(BLD)"=="ENG_TR"
+
+ACM_NAME=$(ACM)_ENG_TR$(USFX)
+
+
+!elseif "$(BLD)"=="REL_NT"
+
+ACM_NAME=$(ACM)_REL_NT$(USFX)
+
+!elseif "$(BLD)"=="REGRESS"
+
+ACM_NAME=$(ACM)_REGRESS$(USFX)
+
+!else
+
+!ERROR ERROR: Unsupported build type (expecting ENG_NT/ENG_TR/REL_NT/REGRESS).
+
+!endif
+
+BLD_DIR=$(BLD_DIR_ROOT)
+
+!if "$(SFX)"!=""
+BLD_DIR=$(BLD_DIR)\$(SFX)
+!endif
+
+
+ALL_INCLUDES         = /I$(BLD_DIR) $(ALL_INCLUDES)
+ML_ALL_INCLUDES      = /I$(BLD_DIR) $(ML_ALL_INCLUDES)
+
+H2INCX_FLAGS         = $(H2INCX_FLAGS) -o $(BLD_DIR)
+
+.h{$(BLD_DIR)}.inc:
+  @echo H2INC  $(@F)
+  $(H2INCX) $(H2INCX_FLAGS) $< $(ENDVERBOSE)
+
+{$(BLD_DIR)}.h{$(BLD_DIR)}.inc:
+  @echo H2INC  $(@F)
+  $(H2INCX) $(H2INCX_FLAGS) $< $(ENDVERBOSE)
+
+
+#*****************************************************************************
+#
+# Objects and dependents.
+#
+#*****************************************************************************
+CORE_OBJECTS   = $(SERVERLIB_DIR)\$(SERVER_LIB) $(LIB_DIR)\$(CORE_LIB)
+
+LOCAL_INC_DEPS = $(ACM).h
+
+INC_DEPS       = $(INC_DEPS) $(LOCAL_INC_DEPS)
+
+MAK_DEPS       = MAKEFILE MAKEFLAG.MAK $(CORE_BUILDDIR)\acm.mak $(SERVERLIB_BUILDDIR)\acm.mak
+
+ALL_DEPS       = $(INC_DEPS) $(MAK_DEPS)
+
+!if "$(ACM_USER_REV)"!=""
+ACM_FLAGS = -AcmUserRev:$(ACM_USER_REV) $(ACM_FLAGS)
+!endif
+
+
+# Set this so depedent library gets check to see if it needs build
+LIB_BUILDDIR  = $(SERVERLIB_BUILDDIR)
+
+#*****************************************************************************
+#
+# Build type dependent memory scrubbing objects. Ingredient objet lists are
+# in MAKEFLAG.MAK file.
+#
+#*****************************************************************************
+!if "$(BLD)"=="ENG_NT"
+
+
+!elseif "$(BLD)"=="ENG_TR"
+
+
+!elseif "$(BLD)"=="REL_NT"
+
+
+!endif
+
+
+#*****************************************************************************
+#
+# Include all files generated in pre-processing.
+#
+#*****************************************************************************
+!if "$(TASK)"=="BUILD"
+#i!include  $(BLD_DIR)\loc_depends.tmp
+!include  $(BLD_DIR)\loc_objects.tmp
+!endif
+
+LOCAL_OBJECTS = $(LOCAL_OBJECTS)
+
+#*****************************************************************************
+#
+# Main execution traget.
+#
+#*****************************************************************************
+all: init_build buildlib
+    @cd $(PROJECT_DIR)
+    @$(MAKE) /NOLOGO TASK=BUILD all_build
+
+#*****************************************************************************
+#
+# Include makeflag.mak file - this is project specific makeflag file,
+# containing all project settings. Use it to change build types etc.
+#
+#*****************************************************************************
+!include MAKEFLAG.MAK
+
+#*****************************************************************************
+#
+# Build type adjustment after MAKEFLAG.MAK is loaded.
+#
+#*****************************************************************************
+
+!ifndef MF_ALG_SHA1_PRESENT
+MF_ALG_SHA1_PRESENT=0
+!endif
+!ifndef MF_ALG_SHA256_PRESENT
+MF_ALG_SHA256_PRESENT=0
+!endif
+!ifndef MF_ALG_SHA384_PRESENT
+MF_ALG_SHA384_PRESENT=0
+!endif
+!ifndef MF_ALG_SHA512_PRESENT
+MF_ALG_SHA512_PRESENT=0
+!endif
+!ifndef MF_ALG_SM3_256_PRESENT
+MF_ALG_SM3_256_PRESENT=0
+!endif
+!ifndef MF_ALG_RSASSA_PRESENT
+MF_ALG_RSASSA_PRESENT=0
+!endif
+!ifndef MF_ALG_ECDSA_PRESENT
+MF_ALG_ECDSA_PRESENT=0
+!endif
+!ifndef MF_ALG_SM2_PRESENT
+MF_ALG_SM2_PRESENT=0
+!endif
+!ifndef MKF_USE_INTERNAL_HASH
+MKF_USE_INTERNAL_HASH=1
+!endif
+!ifndef MKF_USE_MIXED_CRYPTO
+MKF_USE_MIXED_CRYPTO=1
+!endif
+
+SUPPORTED_ALGS_FLAGS= \
+  /DMF_ALG_SHA1_PRESENT=$(MF_ALG_SHA1_PRESENT) \
+	/DMF_ALG_SHA256_PRESENT=$(MF_ALG_SHA256_PRESENT) \
+	/DMF_ALG_SHA384_PRESENT=$(MF_ALG_SHA384_PRESENT) \
+	/DMF_ALG_SHA512_PRESENT=$(MF_ALG_SHA512_PRESENT) \
+	/DMF_ALG_SM3_256_PRESENT=$(MF_ALG_SM3_256_PRESENT) \
+	/DMF_ALG_RSASSA_PRESENT=$(MF_ALG_RSASSA_PRESENT) \
+	/DMF_ALG_ECDSA_PRESENT=$(MF_ALG_ECDSA_PRESENT) \
+	/DMF_ALG_SM2_PRESENT=$(MF_ALG_SM2_PRESENT) \
+	/DMKF_USE_MIXED_CRYPTO=$(MKF_USE_MIXED_CRYPTO) \
+	/DMKF_USE_INTERNAL_HASH=$(MKF_USE_INTERNAL_HASH)
+
+
+SINIT_LCP_POLELT_TYPE_MLE_SUPPORTED=1
+SINIT_LCP_POLELT_TYPE_PCONF_SUPPORTED=1
+SINIT_LCP_POLELT_TYPE_STM_SUPPORTED=0
+
+BIOSAC_LCP_POLELT_TYPE_MLE_SUPPORTED=0
+BIOSAC_LCP_POLELT_TYPE_PCONF_SUPPORTED=0
+BIOSAC_LCP_POLELT_TYPE_STM_SUPPORTED=0
+
+
+SINIT_LCP_SUPPORT_FLAGS = \
+/DMKF_LCP_POLELT_TYPE_MLE_SUPPORTED=$(SINIT_LCP_POLELT_TYPE_MLE_SUPPORTED) \
+/DMKF_LCP_POLELT_TYPE_PCONF_SUPPORTED=$(SINIT_LCP_POLELT_TYPE_PCONF_SUPPORTED) \
+/DMKF_LCP_POLELT_TYPE_STM_SUPPORTED=$(SINIT_LCP_POLELT_TYPE_STM_SUPPORTED)
+
+BIOSAC_LCP_SUPPORT_FLAGS = \
+/DMKF_LCP_POLELT_TYPE_MLE_SUPPORTED=$(BIOSAC_LCP_POLELT_TYPE_MLE_SUPPORTED) \
+/DMKF_LCP_POLELT_TYPE_PCONF_SUPPORTED=$(BIOSAC_LCP_POLELT_TYPE_PCONF_SUPPORTED) \
+/DMKF_LCP_POLELT_TYPE_STM_SUPPORTED=$(BIOSAC_LCP_POLELT_TYPE_STM_SUPPORTED)
+
+
+SINIT_LCP_ELT_SELECTION=LCP_POLELT_TYPE_MLE_SUPPORTED+LCP_POLELT_TYPE_PCONF_SUPPORTED
+
+BIOSAC_LCP_ELT_SELECTION=0
+	
+MKF_FLAGS=$(MKF_FLAGS) $(SUPPORTED_ALGS_FLAGS)
+
+!if "$(BLD)"=="ENG_NT"
+
+TRACE_FLAGS=0
+
+!ifndef SINIT_STACK_SIZE
+SINIT_STACK_SIZE=0x2800
+!endif
+
+!ifndef BIOSAC_STACK_SIZE
+BIOSAC_STACK_SIZE=0x2800
+!endif
+
+!ifndef SINIT_STACK_GAP_SIZE
+SINIT_STACK_GAP_SIZE=_2KB
+!endif
+
+!ifndef BIOSAC_STACK_GAP_SIZE
+BIOSAC_STACK_GAP_SIZE=_2KB
+!endif
+
+MODULE_FLAGS=MF_DEBUG + MF_PROD_WORTHY
+
+!elseif "$(BLD)"=="ENG_TR"
+
+!ifndef TRACE_FLAGS
+TRACE_FLAGS=0xff
+!endif 
+
+!ifndef SINIT_STACK_SIZE
+SINIT_STACK_SIZE=0x3000
+!endif
+
+!ifndef BIOSAC_STACK_SIZE
+BIOSAC_STACK_SIZE=0x2900
+!endif
+
+!ifndef SINIT_STACK_GAP_SIZE
+SINIT_STACK_GAP_SIZE=_2KB
+!endif
+
+!ifndef BIOSAC_STACK_GAP_SIZE
+BIOSAC_STACK_GAP_SIZE=_2KB
+!endif
+
+MKF_FLAGS=$(MKF_FLAGS) /DTRACE_WITH_FUNCTIONS=$(TRACE_FLAGS)
+MODULE_FLAGS=MF_DEBUG + MF_PROD_WORTHY
+
+
+!elseif "$(BLD)"=="REL_NT"
+
+TRACE_FLAGS=0
+
+!ifndef SINIT_STACK_SIZE
+SINIT_STACK_SIZE=0x2800
+!endif
+
+!ifndef BIOSAC_STACK_SIZE
+BIOSAC_STACK_SIZE=0x2800
+!endif
+
+!ifndef SINIT_STACK_GAP_SIZE
+SINIT_STACK_GAP_SIZE=_2KB
+!endif
+
+!ifndef BIOSAC_STACK_GAP_SIZE
+BIOSAC_STACK_GAP_SIZE=_2KB
+!endif
+
+!ifndef MODULE_FLAGS
+MODULE_FLAGS=MF_NOT_PROD_WORTHY
+!endif
+
+!endif
+#
+# Override disable optimisation selections, if any, for release build
+#
+CORE_FLAGS = "MKF_FLAGS=$(MKF_FLAGS)"
+
+!ifndef LOCAL_CL_FLAGS
+LOCAL_CL_FLAGS=/I..\Include
+!endif
+LOCAL_CL64_FLAGS=
+
+!if "$(ACM)" == "SINIT"
+STACK_SIZE=$(SINIT_STACK_SIZE)
+STACK_GAP=$(SINIT_STACK_GAP_SIZE)
+LCP_ELT_SELECTION=$(SINIT_LCP_ELT_SELECTION)
+MKF_FLAGS=$(MKF_FLAGS) $(SINIT_LCP_SUPPORT_FLAGS)
+ACM_TYPE=AC_SINIT
+!else
+STACK_SIZE=$(BIOSAC_STACK_SIZE)
+STACK_GAP=$(BIOSAC_STACK_GAP_SIZE)
+LCP_ELT_SELECTION=$(BIOSAC_LCP_ELT_SELECTION)
+MKF_FLAGS=$(MKF_FLAGS) $(BIOSAC_LCP_SUPPORT_FLAGS)
+ACM_TYPE=AC_BIOSAC
+!endif
+
+MKF_FLAGS=$(MKF_FLAGS) /DMCP_PLATFORM_TYPE=2 /DMCP_CHIPSET_ACM_TYPE=$(ACM_TYPE)
+
+#*****************************************************************************
+#
+# Initial build step. It does:
+# 1) Calls MAKEFLAG.MAK file to generate MAKEFLAG.H file. This is done in
+# order to combine all project specific settings in one place. Previously
+# they were distributed between MAKEFILE and MAKEFLAG.H files.
+# 2) Initiates correct stack measurement
+# 3) Generates local source file LOC_SRC.TMP containing
+# list of all local source files.
+# 4) Uses FOR loops to generate object and dependent files LOC_OBJECTS.TMP,
+# LOC_DEPENDS.TMP
+#
+#*****************************************************************************
+init_build:
+        @echo ===== ACM INIT_BUILD step =====
+        - @md $(BLD_DIR) 2> NUL
+        @$(MAKE) /NOLOGO /F makeflag.mak BLD_DIR=$(BLD_DIR) LCP_ELT_SELECTION="$(LCP_ELT_SELECTION)" STACK_SIZE="$(STACK_SIZE)" STACK_GAP="$(STACK_GAP)" MODULE_FLAGS="$(MODULE_FLAGS)"
+        @echo #define text_alignment_padding 0  > $(BLD_DIR)\text_alignment_padding.h
+        $(H2INCX) $(H2INCX_FLAGS) $(BLD_DIR)\text_alignment_padding.h
+        @del $(BLD_DIR)\Header.obj 2> NUL
+        @echo > nul <<loc_src.tmp
+$(LOCAL_SOURCES: = ^
+)
+<<
+        @echo LOCAL_OBJECTS= \> $(BLD_DIR)\loc_objects.tmp
+        @echo.>$(BLD_DIR)\loc_depends.tmp
+        @echo.>$(BLD_DIR)\loc_targets.tmp
+        @for /F %i IN (loc_src.tmp) DO @echo. $$(BLD_DIR)\%~ni.obj \>> $(BLD_DIR)\loc_objects.tmp
+        @for /F %i IN (loc_src.tmp) DO @echo.$$(BLD_DIR)\%~ni.obj : %~fi $$(ALL_DEPS)>> $(BLD_DIR)\loc_depends.tmp
+        <<generate_acm_local_targets.cmd
+          @SETLOCAL ENABLEDELAYEDEXPANSION
+          @set errorlevel=
+          @for /F %%i IN (loc_src.tmp) DO @(
+            set x=%%~ni
+            set y=%%~fi
+            set z=%%~xi
+            @echo.$$^(BLD_DIR^)\!x!.obj : !y! $$^(ALL_DEPS^)>> $(BLD_DIR)\loc_targets.tmp
+            if /I !z! NEQ .asm (
+              @echo   echo CL $$^(@^) >> $(BLD_DIR)\loc_targets.tmp
+              @echo   $$(^CL^)  $$^(CL_FLAGS^) $$^(LOCAL_CL_FLAGS^) !y! $$^(ENDVERBOSE^) >> $(BLD_DIR)\loc_targets.tmp
+            ) else (
+              @echo   echo ML $$^(@^) >> $(BLD_DIR)\loc_targets.tmp
+              @echo   $$^(ML^)  $$^(ML_FLAGS^) $$^(LOCAL_ML_FLAGS^) !y! $$^(ENDVERBOSE^)  >> $(BLD_DIR)\loc_targets.tmp
+            )
+            @echo. >> $(BLD_DIR)\loc_targets.tmp
+          )
+
+          @ENDLOCAL && exit /b %errorlevel%
+<<
+
+
+#*****************************************************************************
+#
+# This is start of actual build after all pre-build steps. Include all
+# generated files.
+#
+#*****************************************************************************
+all_build: $(BLD_DIR)\$(ACM_NAME).bin
+
+HEADERS = $(BLD_DIR)\$(ACM).inc \
+          $(BLD_DIR)\makeflag.inc
+
+#*****************************************************************************
+#
+# This is one of pre-build steps - update of core library if needed. In case
+# of any of local make files change, touch CORE.MAK file - this enforces full
+# rebuild of core library. This is needed to ensure that changes in build
+# switches affecting core are propagated.
+#
+#*****************************************************************************
+!include $(CORE_BUILDDIR)\buildlib.incl
+#*****************************************************************************
+#
+# This is rest of actual build targets after all pre-build steps. ACM_PASS2
+# target asllows to put into build newly generated text_alignment_padding.inc
+# file
+#
+#*****************************************************************************
+
+$(BLD_DIR)\$(ACM_NAME).exe:  $(LOCAL_INC_DEPS) $(LOCAL_OBJECTS) $(CORE_OBJECTS) $(MAK_DEPS)
+        @echo ===== Building $(@F) =====
+        $(LINK) $(LNK_FLAGS) $(LOCAL_OBJECTS) $(CORE_OBJECTS)
+        @del $(BLD_DIR)\Header.obj 2> NUL
+        $(ACM_PE2BINx) $(BLD_DIR)\$(ACM_NAME).exe -TEXT_Alignment:$(TEXT_ALIGNMENT)
+        @cd $(PROJECT_DIR)
+!if "$(TEXT_ALIGNMENT)"!="0KB"
+        @del $(BLD_DIR)\Header.obj 2> NUL
+        $(NMAKE) /NOLOGO ACM_PASS2
+!endif
+        $(DUMPBIN) /all /disasm $(BLD_DIR)\$(ACM_NAME).exe > $(BLD_DIR)\db_$(ACM_NAME).txt
+
+ACM_PASS2: $(LOCAL_INC_DEPS) $(LOCAL_OBJECTS)
+        @echo ===== Building $(@F) PASS2 =====
+        $(H2INCX) $(H2INCX_FLAGS) $(BLD_DIR)\text_alignment_padding.h
+        $(LINK) $(LNK_FLAGS) $(LOCAL_OBJECTS) $(CORE_OBJECTS)
+
+$(BLD_DIR)\$(ACM_NAME).bin: $(HEADERS) $(BLD_DIR)\$(ACM_NAME).exe $(MAK_DEPS)
+        @echo ===== Building $(@F) =====
+        @cd $(BLD_DIR)
+        $(ACM_PE2BINx) $(ACM_FLAGS) $*.exe   $*.bin
+        $(ACM_PE2BINx) $(ACM_FLAGS) $*.exe   $*.bin
+        @$(REHASH) $(REHASH_FLAGS) $*.bin > $*.base64
+        @cd $(PROJECT_DIR)		
+!if "x$(ACM_POSTPROCESS)" != "x"
+	@<<acm_postprocess.cmd  $(ACM_POSTPROCESS) $(ACM) $(BLD_DIR) $(ACM_NAME) $(ACM_POSTPROCESS_CONFIGFILE)
+@SETLOCAL ENABLEDELAYEDEXPANSION
+@set script=%1
+@set acm=%2
+@set blddir=%3
+@set acmname=%4
+@set configfile=%5
+
+@set errorlevel=
+@call !script! !acm! !blddir! !acmname! !configfile!
+@ENDLOCAL && exit /b %errorlevel%
+<<
+!endif
+#*****************************************************************************
+#
+# Clean targets.
+#
+#*****************************************************************************
+clean:
+        @echo -- DELETING $(BLD_DIR_ROOT)
+        -@rd /S /Q $(BLD_DIR_ROOT) 2> NUL
+        -@del /Q *.inc 2> NUL
+
+cleanall: clean
+        @echo CLEANING $(SERVERLIB_DIR)
+        -@rd /S /Q $(SERVERLIB_DIR) 2> NUL
+        @echo CLEANING $(LIB_DIR)
+        -@rd /S /Q $(LIB_DIR) 2> NUL
+
+!if "$(TASK)"=="BUILD"
+!include  $(BLD_DIR)\loc_targets.tmp
+!endif
+

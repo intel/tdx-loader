@@ -1,0 +1,34 @@
+
+ h2incx version 0.99.19
+ Copyright (c) 2005-2007 japheth.
+ All rights reserved.
+
+ This program is free for commercial and non-commercial use as long as
+ the following conditions are true:
+
+ - the binaries h2incx.exe and h2incxd.exe must not be modified
+
+ Redistribution is permitted for non-commercial purposes, provided that
+ the following conditions are true:
+
+ - Redistribution must include the following files:
+   - h2incx.exe and h2incxd.exe
+   - h2incx.txt
+   - h2incx.ini
+   - license.txt (this file)
+   These files must not be modified.
+ - Usage of ANY part of the software h2incx is shipping with must not be
+   restricted by licence to run on certain operating systems only.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+ PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
