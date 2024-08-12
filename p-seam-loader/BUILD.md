@@ -39,7 +39,9 @@ The docker image is identical across all P-SEAMLDR versions, there is no need to
 
 1. Clone/download the desired TDX loader version ([Releases](https://github.com/intel/tdx-loader/releases)).  
 2. Build the Docker image from the P-SEAMLDR [Dockerfile](Dockerfile) (located inside the relevant repo P-SEAMLDR folder):
+
 ```cd p-seam-loader```
+
 ```docker build . -t tdx-loader-docker```
 
 3. Run the Docker container from the local created docker image:  

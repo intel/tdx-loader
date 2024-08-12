@@ -43,7 +43,9 @@ The docker image is identical across all NP-SEAMLDR versions, there is no need t
 1. CD into the folder that already contains the cloned tdx loader including the compiled P-SEAMLDR bins [here](../p-seam-loader/BUILD.md)
 
 2. Build the Docker image from the [Dockerfile](Dockerfile) (located inside the relevant repo NP-SEAMLDR folder): 
+
 ```cd np-seam-loader```
+
 ```docker build -m 8GB . -t tdx-loader-docker```
 
 3. Run the Docker container from the local created docker image: 
