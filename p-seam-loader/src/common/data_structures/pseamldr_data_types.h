@@ -74,7 +74,12 @@ typedef struct PACKED p_sysinfo_table_s
     uint64_t p_seamldr_range_size;  /**< Size of P_SEAMLDR_RANGE, in bytes */
     uint8_t skip_smrr2_check;       /**< When set, indicates that the TDX module should not check SMRR2. */
     uint8_t tdx_ac;                 /**< When set, indicates that TDX memory is protected by Access Control only (no memory integrity). */
+#ifdef TDXIO_SUPPORTED
+    uint16_t io_sysinfo_table_ver;  /**< The version of the IO_SYS_INFO_TABLE. Must be 0 or 1. */
+    uint8_t reserved_0[60];         /**< Reserved */
+#else
     uint8_t reserved_0[62];         /**< Reserved */
+#endif
     cmr_info_entry_t cmr_data[MAX_CMR]; /**< CMR info (base and size) */
     uint8_t reserved_1[1408];       /**< Reserved */
 
@@ -197,6 +202,9 @@ typedef struct memory_constants_s
     uint64_t pml4_physbase;
     uint64_t current_pt_physbase;
     uint64_t num_addressable_lps;
+#ifdef TDXIO_SUPPORTED
+    uint64_t io_sysinfo_table_linbase;
+#endif
     uint64_t handoff_data_size;
     uint64_t idt_linbase;
     uint64_t gdt_linbase;

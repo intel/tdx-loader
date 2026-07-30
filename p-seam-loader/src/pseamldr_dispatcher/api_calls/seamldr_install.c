@@ -57,8 +57,7 @@ static bool_t check_seam_sigstruct(seam_sigstruct_t* seam_sigstruct)
 
     IF_RARE (!pseamldr_memcmp_to_zero(seam_sigstruct->reserved0, sizeof(seam_sigstruct->reserved0)) ||
              !pseamldr_memcmp_to_zero(seam_sigstruct->reserved1, sizeof(seam_sigstruct->reserved1)) ||
-             !pseamldr_memcmp_to_zero(seam_sigstruct->reserved2, sizeof(seam_sigstruct->reserved2)) ||
-             !pseamldr_memcmp_to_zero(seam_sigstruct->reserved3, sizeof(seam_sigstruct->reserved3))
+             !pseamldr_memcmp_to_zero(seam_sigstruct->reserved2, sizeof(seam_sigstruct->reserved2))
             )
     {
         TDX_ERROR("SEAM sigstruct reserved fields are not zero\n");
@@ -245,13 +244,6 @@ static api_error_type verify_manifest(pseamldr_data_t* pseamldr_data, seamldr_pa
     uint8_t current_module_svn = pseamldr_data->seamextend_snapshot.tee_tcb_svn.seam_minor_svn;
     uint8_t current_module_version = pseamldr_data->seamextend_snapshot.tee_tcb_svn.seam_major_svn;
 
-    // Prevent loading a TDX module with a major version of 0.
-    IF_RARE (new_module_version == 0)
-    {
-        TDX_ERROR("Unable to load TDX module with major version of 0!\n");
-        return PSEAMLDR_EUNSUPPORTED;
-    }
-
     // If the requested scenario is UPDATE (i.e. TMP_PARAMS.SCENARIO == 1), do:
     if (seamldr_params->scenario == SEAMLDR_SCENARIO_UPDATE)
     {
@@ -364,7 +356,7 @@ static api_error_type check_seamldr_params(pseamldr_data_t* pseamldr_data, seaml
         TDX_ERROR("Seamldr params version field is incorrect\n");
         return PSEAMLDR_EBADPARAM;
     }
-    
+
     IF_RARE (!pseamldr_memcmp_to_zero(seamldr_params->reserved, sizeof(seamldr_params->reserved)))
     {
         TDX_ERROR("Seamldr params reserved fields are not zero\n");
@@ -455,8 +447,14 @@ static api_error_type initialize_memory_constants(pseamldr_data_t* pseamldr_data
     // SEAMCFG region:
     // SYS_INFO_TABLE and SEAM VMCS array
     mem_consts->sysinfo_table_linbase = LINEAR_BASE_SYSINFO_TABLE | aslr_mask;
+#ifdef TDXIO_SUPPORTED
+    // SYSINFO table + IO-SYSINFO table
+    mem_consts->seamcfg_region_size = _4KB + (_4KB * 2);
+    mem_consts->io_sysinfo_table_linbase = mem_consts->sysinfo_table_linbase + _4KB;
+#else
     // SYSINFO table
     mem_consts->seamcfg_region_size = _4KB;
+#endif
     mem_consts->vmcs_region_size = _4KB * mem_consts->num_addressable_lps;
 
     // Code region:
@@ -471,8 +469,16 @@ static api_error_type initialize_memory_constants(pseamldr_data_t* pseamldr_data
     mem_consts->data_region_size = (mem_consts->local_data_size * mem_consts->num_addressable_lps) +
                                     mem_consts->global_data_size;
 
-    if (mem_consts->td_preserving_supported)
+    if ((seamldr_params->scenario == SEAMLDR_SCENARIO_UPDATE) && mem_consts->td_preserving_supported)
     {
+        // For UPDATE scenario, set the maximum between previously allocated HANDOFF
+        // and the requested HANDOFF data as defined in the SEAM_SIGSTRUCT.
+        mem_consts->handoff_data_size = MAX((seam_sigstruct->num_handoff_pages + 1) * _4KB,
+                                             pseamldr_data->prev_handoff_data_size);
+    }
+    else if ((seamldr_params->scenario == SEAMLDR_SCENARIO_LOAD) && mem_consts->td_preserving_supported)
+    {
+        // For LOAD scenario, set the requested HANDOFF data as defined in the SEAM_SIGSTRUCT.
         mem_consts->handoff_data_size = (seam_sigstruct->num_handoff_pages + 1) * _4KB;
     }
     else
@@ -626,7 +632,23 @@ static void setup_system_information(pseamldr_data_t* pseamldr_data, p_sysinfo_t
     sysinfo_table->num_stack_pages = (mem_consts->data_stack_size / _4KB) - 1;
     sysinfo_table->num_tls_pages = (mem_consts->local_data_size / _4KB) - 1;
 
+#ifdef TDXIO_SUPPORTED
+    // Copy IO_SYS_INFO pages information from the 8KB that linearly follow P_SYS_INFO_TABLE
+    // to 8KB that linearly follows SEAM module data region
+    // (i.e. from source physical address SEAMRR.LIMIT – 12K
+    //  to destination physical address C_DATA_REGION_PHYSBASE + C_DATA_REGION_SIZE).
+
+    uint8_t* p_io_sysinfo_table = (uint8_t*)p_sysinfo_table + sizeof(p_sysinfo_table_t);
+
+    uint64_t data_region_start_la = p_sysinfo_table->module_region_base +
+                                      (mem_consts->data_region_physbase - pseamldr_data->system_info.seamrr_base);
+
+    uint8_t* io_sysinfo_table = (uint8_t*)(data_region_start_la + mem_consts->data_region_size);
+
+    pseamldr_memcpy(io_sysinfo_table, (_4KB * 2), p_io_sysinfo_table, (_4KB * 2));
+#else
     UNUSED(pseamldr_data);
+#endif
 }
 
 static api_error_type init_seam_range_on_update(pseamldr_data_t* pseamldr_data, p_sysinfo_table_t* p_sysinfo_table,
@@ -638,8 +660,6 @@ static api_error_type init_seam_range_on_update(pseamldr_data_t* pseamldr_data, 
         return PSEAMLDR_EBADCALL;
     }
 
-    sysinfo_table_t* sysinfo_table = (sysinfo_table_t*)p_sysinfo_table->module_region_base;
-
     // Let HANDOFF_DATA = first 8 bytes at physical address C_DATA_REGION_PHYSBASE
     uint64_t data_region_start_la = p_sysinfo_table->module_region_base +
                                       (mem_consts->data_region_physbase - pseamldr_data->system_info.seamrr_base);
@@ -648,7 +668,7 @@ static api_error_type init_seam_range_on_update(pseamldr_data_t* pseamldr_data, 
     uint64_t handoff_size = handoff_data->size + sizeof(handoff_data_header_t);
 
     if (!handoff_data->valid ||
-        (handoff_size > ((sysinfo_table->num_handoff_pages + 1) * _4KB)) ||
+        (handoff_size > pseamldr_data->prev_handoff_data_size) ||
         (handoff_data->hv < pseamldr_data->seam_sigstruct_snapshot.min_update_hv) ||
         (handoff_data->hv > pseamldr_data->seam_sigstruct_snapshot.module_hv))
     {
@@ -692,7 +712,8 @@ _STATIC_INLINE_ void zero_seamextend_structure(seamextend_t* seamextend)
 }
 
 static api_error_type install_epilogue(api_error_type flow_status, uint64_t rec_status,
-                                       pseamldr_data_t* pseamldr_data, p_sysinfo_table_t* p_sysinfo_table)
+                                       pseamldr_data_t* pseamldr_data, p_sysinfo_table_t* p_sysinfo_table,
+                                       memory_constants_t* mem_consts)
 {
     IF_COMMON (flow_status == PSEAMLDR_SUCCESS)
     {
@@ -729,17 +750,17 @@ static api_error_type install_epilogue(api_error_type flow_status, uint64_t rec_
         }
         else // SEAMDB is updated
         {
-            seamextend_copy.seam_ready = 1;
-            seamextend_write(&seamextend_copy);
-
             sysinfo_table_t* sysinfo_table = (sysinfo_table_t*)p_sysinfo_table->module_region_base;
 
             sysinfo_table->module_hv     = pseamldr_data->seam_sigstruct_snapshot.module_hv;
             sysinfo_table->min_update_hv = pseamldr_data->seam_sigstruct_snapshot.min_update_hv;
             sysinfo_table->no_downgrade  = pseamldr_data->seam_sigstruct_snapshot.no_downgrade;
-            sysinfo_table->num_handoff_pages = pseamldr_data->seam_sigstruct_snapshot.num_handoff_pages;
+            sysinfo_table->num_handoff_pages = (uint16_t)(mem_consts->handoff_data_size / _4KB) - 1;
 
             pseamldr_data->num_remaining_updates--;
+
+            seamextend_copy.seam_ready = 1;
+            seamextend_write(&seamextend_copy);
         }
 
         // Set KEY_DIRTY on all existing packages
@@ -764,6 +785,8 @@ static api_error_type install_epilogue(api_error_type flow_status, uint64_t rec_
         basic_memset_to_zero(pseamldr_data->next_block_to_flush, sizeof(pseamldr_data->next_block_to_flush));
         // Set NEXT_KID_TO_CONFIG to all 0's
         basic_memset_to_zero(pseamldr_data->next_kid_to_config, sizeof(pseamldr_data->next_kid_to_config));
+
+        pseamldr_data->prev_handoff_data_size = mem_consts->handoff_data_size;
     }
     else
     {
@@ -972,7 +995,7 @@ api_error_type seamldr_install(uint64_t seamldr_params_pa)
 
 UPDATE_END:
 
-    return_value = install_epilogue(return_value, rec_status, pseamldr_data, p_sysinfo_table);
+    return_value = install_epilogue(return_value, rec_status, pseamldr_data, p_sysinfo_table, &mem_consts);
 
     basic_memset_to_zero(pseamldr_data->update_bitmap, sizeof(pseamldr_data->update_bitmap));
     pseamldr_data->lps_in_update = 0;

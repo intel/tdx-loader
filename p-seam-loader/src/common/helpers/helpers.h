@@ -218,12 +218,12 @@ _STATIC_INLINE_ void zero_cacheline(void* dst)
 
 _STATIC_INLINE_ void pseamldr_memcpy(void * dst, uint64_t dst_bytes, void * src, uint64_t nbytes)
 {
-    volatile uint64_t junk_a, junk_b;
+    volatile uint64_t junk_a, junk_b, junk_c;
 
     pseamldr_sanity_check (dst_bytes >= nbytes, SCEC_HELPERS_SOURCE, 1);
 
     _ASM_VOLATILE_ ("rep; movsb;"
-                    :"=S"(junk_a), "=D"(junk_b)
+                    :"=S"(junk_a), "=D"(junk_b), "=c"(junk_c)
                     :"c"(nbytes), "S"(src), "D"(dst)
                     :"memory");
 }
@@ -231,11 +231,11 @@ _STATIC_INLINE_ void pseamldr_memcpy(void * dst, uint64_t dst_bytes, void * src,
 _STATIC_INLINE_ bool_t pseamldr_memcmp(void * a, void * b, uint64_t nbytes)
 {
     ia32_rflags_t rflags;
-    uint64_t junk_a, junk_b;
+    volatile uint64_t junk_a, junk_b, junk_c;
     _ASM_VOLATILE_ ("repe; cmpsb;"
                     "pushfq\n"
                     "popq %0"
-                    : "=r"(rflags.raw), "=S"(junk_a), "=D"(junk_b)
+                    : "=r"(rflags.raw), "=S"(junk_a), "=D"(junk_b), "=c"(junk_c)
                     :"c"(nbytes), "S"(b), "D"(a)
                     :"memory");
     if (rflags.zf == 0)

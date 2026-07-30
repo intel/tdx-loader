@@ -20,6 +20,7 @@
 //                                                                               
 // SPDX-License-Identifier: MIT
 
+
 char InterlockedCompareExchange8(
     char volatile * Destination,
     char Exchange,

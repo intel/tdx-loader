@@ -1,5 +1,5 @@
 ; Copyright (C) 2023 Intel Corporation                                          
-;                                                                               
+;                                                                                
 ; Permission is hereby granted, free of charge, to any person obtaining a copy  
 ; of this software and associated documentation files (the "Software"),         
 ; to deal in the Software without restriction, including without limitation     
@@ -49,6 +49,7 @@ Entry64:
         %stacksize flat64           ; tell NASM to use rbp
         %assign %$localsize  0
         %local pCom64data:QWORD
+        %local AslrMask:QWORD
 
         %assign %$elements 0
         %rep 4
@@ -56,13 +57,24 @@ Entry64:
         %assign %$elements %$elements + 1
         %endrep
 
-        enter   %$localsize,0
+        enter   %$localsize,0        
         ;
         ; Save entry parameter
         ;
-        mov  [pCom64data],rcx
+        mov  [pCom64data],rcx                
         
-        mov     rcx, [pCom64data]
+        mov     rax, [rcx + SEAMLDR_COM64_DATA.AcmAslrMask]
+        mov     [AslrMask], rax
+        mov     r13, [rcx + SEAMLDR_COM64_DATA.AcmAslrMask]
+        mov     r14, AfterAslr
+        or      r14, r13
+        or      rcx, [rcx + SEAMLDR_COM64_DATA.AcmAslrMask]        
+        jmp     r14
+
+AfterAslr:        
+        
+        or      rsp, [rcx + SEAMLDR_COM64_DATA.AcmAslrMask]
+        or      rbp, [rcx + SEAMLDR_COM64_DATA.AcmAslrMask]
         ; backup registers
         mov     [rcx + SEAMLDR_COM64_DATA.OriginalR8], r8
         mov     [rcx + SEAMLDR_COM64_DATA.OriginalR9], r9
@@ -71,9 +83,14 @@ Entry64:
         mov     [rcx + SEAMLDR_COM64_DATA.OriginalR12], r12
 
         ; zero non-input registers
+        mov     QWORD [rcx + SEAMLDR_COM64_DATA.AcmAslrMask], 0
+        mov     rax, 0
+        mov     rbx, 0
+        mov     rdx, 0
+        mov     rsi, 0        
         mov     r13, 0
         mov     r14, 0
-        mov     r15, 0
+        mov     r15, 0        
 
         ; Align the stack pointer to 16-byte before running the main 64-bit code - required from proper crypto usage
         
@@ -86,7 +103,7 @@ Entry64:
         ;; Exit procedure:
         
         mov     rcx, [pCom64data]
-        
+        or      rcx, [AslrMask]                
         
         lgdt    [rcx + SEAMLDR_COM64_DATA.NewGdtr]
         
@@ -101,9 +118,10 @@ Entry64:
         mov     ax, [rcx + SEAMLDR_COM64_DATA.OriginalSS]
         mov     ss, ax        
         
-        mov     eax, [rcx + SEAMLDR_COM64_DATA.OriginalECX  ]      
+        mov     eax, [rcx + SEAMLDR_COM64_DATA.OriginalECX]      
         push    rax
         mov     rax,   _restored_cs
+        or      rax, [AslrMask]
         push    rax
 
         retfq   
@@ -111,7 +129,7 @@ Entry64:
         
         lgdt    [rcx + SEAMLDR_COM64_DATA.OriginalGdtr]
         
-        ;; turn off PCIDE bit in current CR4
+       ;; turn off PCIDE bit in current CR4
         mov     rdx, cr4
         and     edx, (~020000h)
         mov     cr4, rdx 
@@ -121,10 +139,10 @@ Entry64:
 
         ;; Obtain the saved OS CR4 and retain following bits - LA57, and PGE. Mask off all other bits to 0 and set the SMXE bit to 1.
         ;; PAE should be set regardless of whether it was set originally or not.
-        and     edx, (CR4_LA57 | CR4_PGE)
+        and     edx, (CR4_LA57 | CR4_PGE | CR4_LASS )
         or      edx, (CR4_SMXE | CR4_PAE)
         mov     cr4, rdx
-        
+
         mov     rdx, cr0
         and     edx, (~(CR0_WP))
         mov     cr0, rdx

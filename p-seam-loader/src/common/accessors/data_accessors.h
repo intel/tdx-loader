@@ -79,7 +79,7 @@ _STATIC_INLINE_ pseamldr_data_t* calculate_local_data(void)
     _ASM_VOLATILE_ ("rdgsbase %0"
                      :"=r"(local_data_addr)
                      :
-                     :"cc");
+                     :"cc", "memory");
 
     return (pseamldr_data_t*)local_data_addr;
 }
@@ -92,7 +92,7 @@ _STATIC_INLINE_ p_sysinfo_table_t* calculate_sysinfo_table(void)
     _ASM_VOLATILE_ ("rdfsbase %0"
                      :"=r"(sysinfo_table_addr)
                      :
-                     :"cc");
+                     :"cc", "memory");
 
     return (p_sysinfo_table_t*)sysinfo_table_addr;
 }
@@ -130,6 +130,9 @@ _STATIC_INLINE_ uint64_t translate_module_data_va_to_pa(uint64_t va)
     // (4096 + FS:CODE_REGION_SIZE + FS:STACK_REGION_SIZE + FS:DATA_REGION_SIZE)
     uint64_t data_region_base_pa = (st_p->p_seamldr_range_base + st_p->p_seamldr_range_size) -
             (_4KB + st_p->code_rgn_size + st_p->stack_rgn_size + st_p->data_rgn_size);
+#ifdef TDXIO_SUPPORTED
+    data_region_base_pa = data_region_base_pa - (_4KB * 2); // Add the IO-Sysinfo table
+#endif
 
     pseamldr_sanity_check(((data_region_base_pa + offset_in_data_region) >= data_region_base_pa),
                           SCEC_HELPERS_SOURCE, 6);

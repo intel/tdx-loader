@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef NP_SEAMLDR_API_H
@@ -26,30 +26,20 @@
 #pragma once
 #pragma pack (push, 1)
 
-#define NP_SEAMLDR_RSA_SIZE                         384
-#define NP_SEAMLDR_HASH_SIZE                        48
-#define NP_SEAMLDR_PARAMS_NUM_MOD_PAGES             496
-#define NP_SEAMLDR_PARAMS_STATUS_SUCCESS            0
-#define NP_SEAMLDR_ERROR_CLASS_ECPARAM              0000
-#define NP_SEAMLDR_ERROR_CLASS_EPLAT                0001
-#define NP_SEAMLDR_PARAMS_STATUS_EBADPARAM          0x8000000000000000
-#define NP_SEAMLDR_PARAMS_STATUS_EMODBUSY           0x8000000000000001
-#define NP_SEAMLDR_PARAMS_STATUS_ELDRINPROG         0x8000000000000002
-#define NP_SEAMLDR_PARAMS_STATUS_EBADRANGE          0x8000000000010000
-#define NP_SEAMLDR_PARAMS_STATUS_EBADPLATF          0x8000000000010001
-#define NP_SEAMLDR_PARAMS_STATUS_ENOMEM             0x8000000000010002
-#define NP_SEAMLDR_PARAMS_STATUS_EUNSPECERR         0x8000000000010003
+#define NP_SEAMLDR_PARAMS_STATUS_SUCCESS       0
+#define NP_SEAMLDR_PARAMS_STATUS_EBADPARAM     0x8000000000000000
+#define NP_SEAMLDR_PARAMS_STATUS_EMODBUSY      0x8000000000000001
+#define NP_SEAMLDR_PARAMS_STATUS_ELDRINPROG    0x8000000000000002
+#define NP_SEAMLDR_PARAMS_STATUS_EBADRANGE     0x8000000000010000
+#define NP_SEAMLDR_PARAMS_STATUS_EBADPLATF     0x8000000000010001
+#define NP_SEAMLDR_PARAMS_STATUS_ENOMEM        0x8000000000010002
 
-#define NP_SEAMLDR_MAX_CPUID_TABLE_SIZE             255
-#define SYS_INFO_TABLE_SOCKET_CPUID_TABLE_SIZE      8
-#define SYS_INFO_TABLE_NUM_CMRS                     32
-#define SYS_INFO_TABLE_SEAM_STATUS_NOT_LOADED       0
-#define SYS_INFO_TABLE_SEAM_STATUS_LOADED           1
-#define SYS_INFO_TABLE_SEAM_STATUS_LOAD_IN_PROGRESS 2
-#define SYS_INFO_TABLE_X2APICID_VALID               1
+#define SYS_INFO_TABLE_SOCKET_CPUID_TABLE_SIZE 8
+#define SYS_INFO_TABLE_NUM_CMRS                32
+#define SYS_INFO_TABLE_X2APICID_VALID          1
 
-#define MOD_PAGE_SIZE                               _4KB
-#define ASLR_MASK                                   0x7FFC
+#define MOD_PAGE_SIZE                          _4KB
+#define ASLR_MASK                              0x7FFC
 
 typedef struct {
   UINT64 Base;
@@ -65,7 +55,12 @@ typedef struct {
   MemRange_t PSeamldrRange;
   UINT8      SkipSMRR2Check;
   UINT8      TDX_AC;
-  UINT8      Reserved_0[62];
+#ifdef _TDXIO_SUPPORT
+  UINT16 IoSysInfoTableVer;
+  UINT8  Reserved_0[60];
+#else
+  UINT8 Reserved_0[62];
+#endif
   MemRange_t Cmr[SYS_INFO_TABLE_NUM_CMRS];
   UINT8      Reserved_1[1408];
   // fields populated by NP-SEAMLDR

@@ -126,7 +126,11 @@ typedef struct
 
     uint32_t gdt_idt_offset;
     uint32_t fault_wrapper_offset;
-    uint8_t  reserved3[24];
+
+    uint32_t module_version;
+    uint32_t release_info;
+
+    uint8_t  reserved_not_mbz[16];
 
     uint32_t cpuid_table_size;
     uint32_t cpuid_table[SEAM_SIGSTRUCT_MAX_CPUID_TABLE_SIZE];

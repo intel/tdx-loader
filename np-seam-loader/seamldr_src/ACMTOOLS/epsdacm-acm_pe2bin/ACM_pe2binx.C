@@ -19,16 +19,7 @@
 // OR OTHER DEALINGS IN THE SOFTWARE.                                            
 //                                                                               
 // SPDX-License-Identifier: MIT
-/*****************************************************************************
- **
- **   Copyright (C) 2015-2021 Intel Corporation. All rights reserved.
- **
- **  The information and source code contained herein is the exclusive
- **  property of Intel Corporation and may not be disclosed, examined
- **  or reproduced in whole or in part without explicit written authorization
- **  from the company.
- **
- *****************************************************************************/
+
 /******************************************************************************
  *  Filename:   ACM_PE2BINx.C  ((for SKL and newer projects)                  *
  *  Function:   1) extracts binary from a firmware PE/COFF executable         *
@@ -1222,6 +1213,10 @@ int GetAcmModuleOffset(void)
     case ACM_VERSION_4:
         AcmModuleOffset = ACM_HEADER_4_SIZE;
         break;
+    case ACM_VERSION_5:
+        AcmModuleOffset = ACM_HEADER_4_SIZE;
+        break;
+
     default:
         AcmModuleOffset = 0;
         break;
@@ -1803,6 +1798,14 @@ int CheckAcmHeader(FILE *BIN32_fh)
   }
   //Version 0x400
   else if ((Buff & 0xFF0000) == HeaderVersionStable) {
+      //size must be: 0x3A0
+      if (HeaderLen != HeaderLenStable) {
+          printf("\nACM Header version 0x%X\nIncorrect header size.\nExpected: 0x0%X; found: 0x%X", Buff, HeaderLenStable, HeaderLen);
+          HasError = 1;
+      }
+  }
+  //Version 0x500
+  else if ((Buff & 0xFF0000) == 0x50000) {
       //size must be: 0x3A0
       if (HeaderLen != HeaderLenStable) {
           printf("\nACM Header version 0x%X\nIncorrect header size.\nExpected: 0x0%X; found: 0x%X", Buff, HeaderLenStable, HeaderLen);

@@ -1,5 +1,5 @@
 // Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
+//                                                                                
 // Permission is hereby granted, free of charge, to any person obtaining a copy  
 // of this software and associated documentation files (the "Software"),         
 // to deal in the Software without restriction, including without limitation     
@@ -25,6 +25,7 @@
 #include <Header.h>
 #include <NpSeamldr.h>
 #include <paging.h>
+#include <accessors.h>
 #include "GsSupport64.h"
 
 static volatile UINT8 STSRegister;
@@ -37,6 +38,7 @@ static void CloseTPMLocality(PT_CTX* PtCtx)
     // This is the first mapping the we do, so it should always succeed with enough page table entries left
     volatile TXT* TXTPrivateBase = (volatile TXT*)MapPhysicalRange(PtCtx, LT_PRV_BASE, sizeof(TXT), PAGE_WRITABLE, PAGE_4K, PAGE_UC_MEMTYPE);
     volatile UINT8 ReadByte;
+
 
     if ((UINT64)TXTPrivateBase == (UINT64)BAD_MAPPING) {
         _ud2();
@@ -98,26 +100,68 @@ static void ReopenTPMLocality(PT_CTX* PtCtx)
     }
 }
 
-void Target64 (SEAMLDR_COM64_DATA *pCom64)
+void ScrubPt(UINT64 PtAddr)
+{
+    fillMemory((UINT8*)PtAddr, 0, PAGE4K);
+    PRINT_HEX_VAL_LEVEL(_PRINT_LEVEL_EXTENDED, "Scrubbed PT\n", PtAddr);
+}
+
+void Target64(SEAMLDR_COM64_DATA* pCom64)
 {
     UINT64 canonicity_mask = 0;
+    UINT64 OriginalBIOSID;
+    UINT32 CpuidFms;
+    UINT32 Pml4AslrVal = 0;
+    
     __security_init_cookie();
     pCom64->NewIDTR.Limit = pCom64->OriginalIDTRLimit;
     pCom64->NewIDTR.Base = pCom64->OriginalR12;
-    *(UINT64 *)(pCom64->OriginalGdtr + 2) = pCom64->OriginalR9;
-    pCom64->ResumeRip   = pCom64->OriginalR10;
+    *(UINT64*)(pCom64->OriginalGdtr + 2) = pCom64->OriginalR9;
+    pCom64->ResumeRip = pCom64->OriginalR10;
     pCom64->OriginalCR3 = pCom64->OriginalR11;
+    PRINT_HEX_VAL("Original GDT base: ", pCom64->OriginalR9)
 
+    // scrub non ASLR PT
     PT_CTX* PtCtx = (PT_CTX*)pCom64->PtCtxPtr;
+    SEAMLDR_PAGING_TABLE_T* SeamldrPagingTable64 = (SEAMLDR_PAGING_TABLE_T*)(UINT64)PtCtx->SeamldrPagingTable;
+    
+    for (UINT8 Idx = 0; Idx < sizeof(SeamldrPagingTable64->Pd32) / PAGE4K; Idx++) {
+        ScrubPt((UINT64)&SeamldrPagingTable64->Pd32[Idx]);
+    }
+    for (UINT8 Idx = 0; Idx < sizeof(SeamldrPagingTable64->Pt32) / PAGE4K; Idx++) {
+        ScrubPt((UINT64)&SeamldrPagingTable64->Pt32[Idx]);
+    }
 
-    CloseTPMLocality(PtCtx);
-    canonicity_mask = ((pCom64->OriginalCR4 & CR4_LA57) != 0) ? CANONICITY_MASK_5LP : CANONICITY_MASK_4LP;
+    // scrub initial PML4 entry if the random value is not 0
+    Pml4AslrVal = (UINT32)(pCom64->AcmAslrMask >> 39);
+    if (Pml4AslrVal != 0) {
+        SeamldrPagingTable64->Pml4.PT[0].Raw = 0;
+    }
+
+    // reload TLB
+    WriteCr3(ReadCr3());
+    PtCtx->SeamldrPagingTable = 0; // scrub
+
+    // SAVE BIOS ID before the first CPUID
+    OriginalBIOSID = readMsr64(MSR_IA32_BIOS_SIGN_ID);
+
+    (void)CpuidEx(CPUID_VERSION_INFORMATION_FMS, 0, &CpuidFms, NULL, NULL, NULL);
+
+    if ((CpuidFms & CPUID_FM_MASK) != CPUID_CWF_FMS) {
+        CloseTPMLocality(PtCtx);
+    }
+    canonicity_mask = ((pCom64->OriginalCR4 & CR4_LA57) != 0) ? (UINT64)CANONICITY_MASK_5LP : (UINT64)CANONICITY_MASK_4LP;
     if (((pCom64->ResumeRip & canonicity_mask) != 0) && ((pCom64->ResumeRip & canonicity_mask) != canonicity_mask)) {
         _ud2();
     }
         
     SeamldrAcm(pCom64, PtCtx);
-    ReopenTPMLocality(PtCtx);    
+    if ((CpuidFms & CPUID_FM_MASK) != CPUID_CWF_FMS) {
+        ReopenTPMLocality(PtCtx);
+    }
+    // RESTORE BIOS ID after the last CPUID
+    writeMsr64(MSR_IA32_BIOS_SIGN_ID, OriginalBIOSID);
+
     *(UINT16*)pCom64->NewGdtr = 0xFFF;
     *(UINT64*)(pCom64->NewGdtr + 2) = (UINT64)TempGdt;
     *(UINT64*)(TempGdt + pCom64->OriginalES) = GdtBasePtr.AcmDataDescriptor.Raw;

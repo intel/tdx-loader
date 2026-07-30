@@ -62,11 +62,17 @@ static uint64_t map_seam_range_page(memory_constants_t* mem_consts, uint64_t pa,
             // SEAMRR_BASE
             // SEAM VMCS area
             // Data region (address grows up)
+#ifdef TDXIO_SUPPORTED
+            // IO-Sysinfo table (8KB)
+#endif
             // SEAM page table region end (last page table available) and Data region end
             // SEAM page table region start - current_pt_physbase (address grows down)
             // SEAM PML4 page table
             // Stack region
             uint64_t data_region_end = mem_consts->data_region_physbase + mem_consts->data_region_size;
+#ifdef TDXIO_SUPPORTED
+            data_region_end += _4KB * 2;
+#endif
             if (mem_consts->current_pt_physbase < data_region_end)
             {
                 return NULL_PA;
@@ -204,6 +210,17 @@ api_error_type seam_module_memory_map(pseamldr_data_t* pseamldr_data, memory_con
         TDX_ERROR("Sysinfo table mapping failure\n");
         return PSEAMLDR_ENOMEM;
     }
+
+#ifdef TDXIO_SUPPORTED
+    // IO-Sysinfo page
+    if (!map_regular_range(mem_consts, mem_consts->data_region_physbase + mem_consts->data_region_size,
+                           mem_consts->io_sysinfo_table_linbase,
+                           (_4KB * 2), SEAM_IOSYSINFO_RANGE_ATTRIBUTES))
+    {
+        TDX_ERROR("IO-Sysinfo table mapping failure\n");
+        return PSEAMLDR_ENOMEM;
+    }
+#endif
 
     // Keyhole + keyhole edit pages
     if (!map_keyhole_range(mem_consts))

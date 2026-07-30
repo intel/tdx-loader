@@ -1,5 +1,5 @@
 ; Copyright (C) 2023 Intel Corporation                                          
-;                                                                               
+;                                                                                
 ; Permission is hereby granted, free of charge, to any person obtaining a copy  
 ; of this software and associated documentation files (the "Software"),         
 ; to deal in the Software without restriction, including without limitation     
@@ -19,6 +19,7 @@
 ; OR OTHER DEALINGS IN THE SOFTWARE.                                            
 ;                                                                               
 ; SPDX-License-Identifier: MIT
+
 
 %ifndef ACMCOM_EQU
 %define ACMCOM_EQU 0
@@ -91,11 +92,15 @@
 %define CR4_PGE 					       (1 << 7)
 %define CR4_LA57					       (1 << 12)
 %define CR4_SMXE                           (1 << 14)
+%define CR4_LASS                           (1 << 27)
 
 %define MF_PRODUCTION      0
 %define MF_DEBUG           (1 << 15)
 %define MF_PROD_WORTHY     0
 %define MF_NOT_PROD_WORTHY (1 << 14)
+
+%define CPUID_CWF_FMS                       0xD06D0
+%define CPUID_FM_MASK                       0xFFFF0
 
 
 ; T_DATA no longer used after code changes
@@ -600,6 +605,8 @@ struc SEAMLDR_COM64_DATA
 .PseamldrOffset:              resq   1
 .PseamldrConstsOffset:     	  resq   1
 .NewGdtr:     				  resb   10
+.AcmAslrMask                  resq   1
+.PseamldrAslrVal              resw   1
 endstruc
 %endif
 

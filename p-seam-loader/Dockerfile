@@ -73,22 +73,32 @@ RUN wget -P /tmp --no-check-certificate https://www.nasm.us/pub/nasm/releasebuil
     && rm -rf /tmp/nasm-$NASM_VERSION.*
 
 # Install Python3
+#RUN apt install -y build-essential checkinstall \
+#    && apt-get -y install zlib1g-dev \
+#    && wget -P /tmp --no-check-certificate https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz \
+#    && wget -P /tmp --no-check-certificate https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
+#    && cd /tmp && tar -xvf Python-3.8.1.tar.xz \
+#    && cd /tmp/Python-3.8.1 \
+#    && ./configure \
+#    && make altinstall \
+#    && update-alternatives --install /usr/bin/python3.8 python3.8 /usr/local/bin/python3.8 1 \
+#    && update-alternatives --install /usr/bin/python python /usr/bin/python3 1 \
+#    && update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 1 \
+#    && python3.8 /tmp/get-pip.py \
+#    && rm -rf /tmp/get-pip.py /tmp/Python-3.8.1*
+#
+
+
 RUN apt install -y build-essential checkinstall \
     && apt-get -y install zlib1g-dev \
-    && wget -P /tmp --no-check-certificate https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz \
-    && wget -P /tmp --no-check-certificate https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
-    && cd /tmp && tar -xvf Python-3.8.1.tar.xz \
-    && cd /tmp/Python-3.8.1 \
-    && ./configure \
-    && make altinstall \
-    && update-alternatives --install /usr/bin/python3.8 python3.8 /usr/local/bin/python3.8 1 \
-    && update-alternatives --install /usr/bin/python python /usr/bin/python3 1 \
-    && update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.8 1 \
-    && python3.8 /tmp/get-pip.py \
-    && rm -rf /tmp/get-pip.py /tmp/Python-3.8.1*
+    && apt-get -y install python3 \
+    && apt-get -y install python3-pip
+
 
 # Install CMake
-RUN pip uninstall --yes setuptools \
-    && pip install setuptools>=65.5.1 \
-    && pip install cmake==3.18 \
-    && update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 \
+RUN python3 - m pip uninstall --yes setuptools \
+    && python3 -m pip install setuptools>=65.5.1 \
+    && python3 -m pip install cmake==3.18 \
+    && update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1 
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1

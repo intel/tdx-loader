@@ -56,6 +56,7 @@ api_error_type seamldr_info(uint64_t output_buffer_pa)
     out_seamldr_info_la->build_num  = PSEAMLDR_BUILD_NUM;
     out_seamldr_info_la->minor      = PSEAMLDR_MINOR_VER;
     out_seamldr_info_la->major      = PSEAMLDR_MAJOR_VER;
+    out_seamldr_info_la->update     = PSEAMLDR_UPDATE_VER;
     out_seamldr_info_la->acm_x2apic = get_psysinfo_table()->acm_x2apicid;
 
     seamextend_read(&seamextend);

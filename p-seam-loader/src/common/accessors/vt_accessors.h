@@ -78,7 +78,7 @@ _STATIC_INLINE_ void ia32_vmwrite(uint64_t encoding, uint64_t value)
 			"popq %0"
 			: "=r"(rflags.raw)
             :"r"(value), "r"(encoding)
-            : "cc");
+            : "cc", "memory");
 
 	pseamldr_sanity_check((rflags.cf == 0 && rflags.zf == 0), SCEC_VT_ACCESSORS_SOURCE, (uint32_t)encoding);
 }

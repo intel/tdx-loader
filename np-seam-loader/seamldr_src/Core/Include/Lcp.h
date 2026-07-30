@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef LCP_H
@@ -26,21 +26,9 @@
 #include <tpm.h>
 #include <KeySignCom.h>
 
-#define POLHALG_SHA1           0x00
-#define POLSALG_NONE           0x00
-#define POLSALG_RSA_PKCS_15    0x01
-#define MAX_POLSALG            0x01
+#define LCP_MAX_LISTS       0x08
 
-#define POLTYPE_LIST           0x00
-#define POLTYPE_ANY            0x01
-#define MAX_POLTYPE            0x01 // maximum value for Policy Type
-
-#define LCP_CAP_POWN_SUPPORTED BIT0
-
-#define LCP_MAX_LISTS          0x08
-#define POLTYPE_NONE           0xFF
-
-#define LCP_POLELT_TYPE_MAX    (LCP_POLELT_TYPE_STM + 1)
+#define LCP_POLELT_TYPE_MAX (LCP_POLELT_TYPE_STM + 1)
 //
 // Don't remove commented fields of structures - they
 // cannot be uncommented due to the same zero-size aray limitation but
@@ -100,8 +88,6 @@ typedef union {
   UINT8 sm3[SM3_256_DIGEST_SIZE];
 } LCP_HASH2;
 
-#define LCP_POLELT_TYPE_MLE2 (0x10 | LCP_POLELT_TYPE_MLE)
-
 typedef struct {
   UINT8     SINITMinVersion;
   UINT8     Reserved;
@@ -110,14 +96,11 @@ typedef struct {
   LCP_HASH2 Hashes[VAR_SIZE];
 } LCP_MLE_ELEMENT2;
 
-#define LCP_POLELT_TYPE_STM2 (0x10 | LCP_POLELT_TYPE_STM)
 typedef struct {
   UINT16    HashAlg; // one of TPM_ALG_*
   UINT16    NumHashes;
   LCP_HASH2 Hashes[VAR_SIZE];
 } LCP_STM_ELEMENT2;
-
-#define LCP_POLELT_TYPE_PCONF2 (0x10 | LCP_POLELT_TYPE_PCONF)
 
 typedef struct {
   UINT16          HashAlg; // one of TPM_ALG_*
@@ -233,15 +216,6 @@ typedef union {
   LCP_POLICY_LIST2_1 TPM20PssPolicyList;
 } LCP_LIST;
 
-#define LCP_POLICY_LIST_VER1_MAJOR 0x01
-#define LCP_POLICY_LIST_VER2_MAJOR 0x02
-#define LCP_POLICY_LIST_VER3_MAJOR 0x03
-
-#define LCP_POLICY_LIST_MAJOR(LIST)          ((LIST)->TPM20PolicyList.ListVersion >> 8)
-#define LCP_POLICY_LIST_MINOR(LIST)          ((LIST)->TPM20PolicyList.ListVersion & 0xFF)
-
-#define MK_LCP_POLICY_LIST_VERSION(MAJ, MIN) (((MAJ) << 8) | ((MIN) & 0xFF))
-
 typedef struct {
   UINT8           id[32];
   UINT8           Reserved[3];
@@ -262,36 +236,6 @@ typedef struct {
   UINT8              NumLists;
   LCP_POLICY_LIST2_1 PolicyLists[];
 } LCP_POLICY_DATA2_1;
-
-#define LCP_APPROVED_ALG_SHA1       BIT0
-#define LCP_APPROVED_ALG_SHA224     BIT1
-#define LCP_APPROVED_ALG_SHA512_224 BIT2
-#define LCP_APPROVED_ALG_SHA256     BIT3
-#define LCP_APPROVED_ALG_SHA512_256 BIT4
-#define LCP_APPROVED_ALG_SM3_256    BIT5
-#define LCP_APPROVED_ALG_SHA384     BIT6
-#define LCP_APPROVED_ALG_SHA512     BIT7
-#define LCP_APPROVED_ALG_WHIRLPOOL  BIT8
-
-//
-// These masks match below structure. They mush stay in sync.
-//
-#define LCP_APPROVED_ALG_RSASSA_MSK 0x00000FFF
-#define LCP_APPROVED_ALG_ECDSA_MSK  0x00003000
-#define LCP_APPROVED_ALG_SM2_MSK    0x00010000
-
-#define LCP_APPROVED_SHA1_MSK       0x00000005
-#define LCP_APPROVED_SHA256_MSK     0x0000124A
-#define LCP_APPROVED_SHA384_MSK     0x00002490
-#define LCP_APPROVED_SHA512_MSK     0x00000920
-#define LCP_APPROVED_SM3_MSK        0x00010000
-
-#define LCP_APPROVED_1024KEY_MSK    0x00000003
-#define LCP_APPROVED_2048KEY_MSK    0x0000003C
-#define LCP_APPROVED_3072KEY_MSK    0x000001C0
-#define LCP_APPROVED_4096KEY_MSK    0x00000E00
-#define LCP_APPROVED_256KEY_MSK     0x00001000
-#define LCP_APPROVED_384KEY_MSK     0x00002000
 
 typedef union {
   struct {
@@ -360,16 +304,6 @@ typedef struct _ACM_LCP_POLICY {
   UINT32 Read             : 1;
   UINT32 Resv             : 23;
 } ACM_LCP_POLICY;
-
-#define LCP_POLICY_VER2_MAJOR     0x2
-#define LCP_POLICY_VER2_MIN_MINOR 0x3
-#define LCP_POLICY_VER3_MAJOR     0x3
-#define LCP_POLICY_VER3_MIN_MINOR 0x1
-
-#define LCP_POLICY_MAJOR(P)             ((P)->PolicyVersion >> 8)
-#define LCP_POLICY_MINOR(P)             ((P)->PolicyVersion & 0xFF)
-
-#define MK_LCP_POLICY_VERSION(MAJ, MIN) (((MAJ) << 8) | ((MIN) & 0xFF))
 
 #define ELT_IND     UINT8
 #define POL_CONTROL UINT32
@@ -461,9 +395,8 @@ typedef struct _LCP_CONTEXT {
   // NO_MATCH - elements of given type are present but no match is found
   // INDEX of list where match is found
   //
-#define NO_SUCH_TYPE   0xFF
-#define NO_MATCH       0xFE
-#define MODULE_REVOKED 0xFD
+#define NO_SUCH_TYPE 0xFF
+#define NO_MATCH     0xFE
 
   union {
     LCP_LIST_INFO EffElt[LCP_POLELT_TYPE_MAX];
@@ -532,18 +465,6 @@ typedef struct _LCP_CONTEXT {
   GET_DATA fpGetBiosModuleHash;
 } LCP_CONTEXT;
 
-void LaunchControlPolicy();
-void getPolicy(UINT32, ACM_LCP_POLICY *);
-void enforceMle();
-void enforcePConf();
-void enforceStm();
-void enforceSbios();
-void processTpmLcp();
-UINT32 GetEffectiveLcpPolicy();
-void validateLcp();
-void enforceLcp();
-void HashPolicy(UINT32, UINT8 *);
-
 extern void __LcpErrorHandler(UINT32, UINT32);
 
 #if TRACE_WITH_FUNCTIONS & TRACE_ERRORHANDLER
@@ -560,8 +481,7 @@ typedef struct {
   INT32  HashAlgIdx;
 } LCP_MASK_INFO;
 
-#define LCP_ALG_ID_COUNT   9
-#define LCP_ALG_VALID_MASK ((1 << LCP_ALG_ID_COUNT) - 1)
+#define LCP_ALG_ID_COUNT 9
 
 typedef UINT32 (*PTR_FUNC_NO_ARG)();
 typedef void (*PTR_FUNC_VALIDATE_ELT)(LCP_POLICY_ELEMENT *);
@@ -576,11 +496,6 @@ UINT32 Tpm20EvaluateStmPolicyElement(LCP_POLICY_ELEMENT *,
 UINT32 Tpm20EvaluateSbiosPolicyElement(LCP_POLICY_ELEMENT *,
                                        LCP_LIST_INFO *);
 
-void Tpm20ValidateMlePolicyElement(LCP_POLICY_ELEMENT *);
-void Tpm20ValidatePConfPolicyElement(LCP_POLICY_ELEMENT *);
-void Tpm20ValidateStmPolicyElement(LCP_POLICY_ELEMENT *);
-void Tpm20ValidateSbiosPolicyElement(LCP_POLICY_ELEMENT *);
-
 UINT32 getListData(LCP_LIST *,
                    void **,
                    UINT32 *,
@@ -589,17 +504,8 @@ UINT32 getListData(LCP_LIST *,
                    UINT16 *,
                    UINT16 *,
                    UINT16 *);
-void ValidateSignedLcpList(LCP_LIST *);
 void HashSignedLcpList(LCP_LIST *,
                        UINT8 *);
-void HashUnSignedLcpList(LCP_LIST *, UINT32, UINT8 *);
-
-void LcpInit();
-UINT8 IsElementTypeValid(UINT32);
-
-void Tpm20ValidateLcpPolicyData();
-
-#define validateTpmLcpPolicyData (*lcpCtx.fpValidateLcpPolicyDataTpm)
 
 void Tpm20SetLcpEffectiveHashes();
 
@@ -608,23 +514,6 @@ void Tpm20SetLcpEffectiveHashes();
 void Tpm20SetLcpEffectiveHashes();
 
 #define setLcpEffectiveHashes (*lcpCtx.fpSetLcpEffectiveHashesTpm)
-
-#define GetBiosModuleHash     (*lcpCtx.fpGetBiosModuleHash)
-
-UINT8 ValidateSignedListAttributes(LCP_LIST *);
-
-void Tpm20SelectivelyCopyEffectiveListHash(LCP_LIST *);
-
-#define copyEffectiveListHash (*lcpCtx.fpCopyEffectiveListHash)
-
-void Tpm20LcpInit();
-
-#define LcpTpmInit (*lcpCtx.fpLcpInitTpm)
-
-void LcpValidatePolicyVersion(ACM_LCP_POLICY *);
-
-UINT8 Tpm20IsLcpHashAlgSupported(UINT16);
-INT32 AlgIdToIdx(UINT16);
 
 extern COMBINED_HASH_DATA CombinedHashData;
 extern UINT32 lcpModPtr;

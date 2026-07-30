@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef COMMON_H
@@ -43,12 +43,8 @@
 #include <MemoryOps.h>
 
 #define STRINGIFY(X) #X
-#define TOSTRING(X)  STRINGIFY(X)
 
-#define PORT80 0x80
-#define PORT81 0x81
-
-#define BITN(N) (1 << (N))
+#define BITN(N)      (1 << (N))
 //-----------------------------------------------------------------------------
 // Misc definitions and helper macros.
 //-----------------------------------------------------------------------------
@@ -58,28 +54,18 @@
 #define NULL      0
 #define EQUAL     0
 #define NOT_EQUAL 1
-#define ZEROS     ((UINT32) 0)
-#define ONES      ((UINT32) 0xFFFFFFFF)
 
 #define IN
 #define OUT
 #define OPTIONAL
 
 #define max(A, B)      (((A) > (B)) ? (A) : (B))
-#define min(A, B)      (((A) > (B)) ? (B) : (A))
 
 #define offsetof(T, I) ((UINT32)((UINT8 *)&((T *)0)->I - (UINT8 *)0))
-#define lenof(T, I)    sizeof(((T *)0)->I)
 
 #define highdword(R)   (*((UINT32 *)&(R) +1))
-#define highword(R)    (*((UINT16 *)&(R) +1))
-#define highbyte(R)    (*((UINT8 *)&(R) +1))
 
 #define rounded(R, V)  ((((R) % (V)) == 0) ? (R) : (((R) / (V)) * (V)) + (V))
-#define rounded4KB(R)  rounded((R), (_4KB))
-
-#define SWAP_UINT16(x) (((x) >> 8) | ((x) << 8))
-#define SWAP_UINT32(x) (((x) >> 24) | (((x) & 0x00FF0000) >> 8) | (((x) & 0x0000FF00) << 8) | ((x) << 24))
 
 //-----------------------------------------------------------------------------
 // Common types
@@ -92,9 +78,6 @@
 #define UINTN  UINT64
 #define INT32  __int32
 #define INT64  __int64
-typedef UINT8 *PBYTE;
-typedef char *PSBYTE;
-typedef UINT32 *PDWORD;
 typedef UINT8 BOOL;
 typedef UINT32 (*PTR_FUNC_NO_ARG) ();
 
@@ -165,124 +148,47 @@ typedef struct {
   UINT32 GucMediaWopcmSize;
 } GTT_COPY;
 
-//-----------------------------------------------------------------------------
-// Sizes and masks
-//-----------------------------------------------------------------------------
-#define _4PB        0x0010000000000000
-#define _64TB       0x400000000000
-#define _256GB      0x4000000000
-#define _64GB       0x1000000000
-#define _32GB       0x800000000
-#define _16GB       0x400000000
-#define _8GB        0x200000000
-#define _4GB        0x100000000
-#define _3GB        0xC0000000
-#define _2GB        0x80000000
-#define _2016MB     0x7E000000
-#define _1_5GB      0x60000000
-#define _1GB        0x40000000
-#define _512MB      0x20000000
-#define _480MB      0x1E000000
-#define _448MB      0x1C000000
-#define _416MB      0x1A000000
-#define _384MB      0x18000000
-#define _352MB      0x16000000
-#define _320MB      0x14000000
-#define _288MB      0x12000000
-#define _256MB      0x10000000
-#define _224MB      0xE000000
-#define _192MB      0xC000000
-#define _160MB      0xA000000
-#define _128MB      0x8000000
-#define _96MB       0x6000000
-#define _64MB       0x4000000
-#define _60MB       0x3C00000
-#define _56MB       0x3800000
-#define _52MB       0x3400000
-#define _48MB       0x3000000
-#define _44MB       0x2C00000
-#define _40MB       0x2800000
-#define _36MB       0x2400000
-#define _32MB       0x2000000
-#define _28MB       0x1C00000
-#define _24MB       0x1800000
-#define _20MB       0X1400000
-#define _16MB       0x1000000
-#define _15MB       0xF00000
-#define _14MB       0xE00000
-#define _12MB       0xC00000
-#define _8MB        0x800000
-#define _4MB        0x400000
-#define _3MB        0x300000
-#define _2MB        0x200000
-#define _1MB        0x100000
-#define _512KB      0x80000
-#define _256KB      0x40000
-#define _384KB      0x60000
-#define _192KB      0x30000
-#define _172KB      0x2B000
-#define _128KB      0x20000
-#define _64KB       0x10000
-#define _32KB       0x8000
-#define _31KB       0x7C00
-#define _20KB       0x5000
-#define _16KB       0x4000
-#define _12KB       0x3000
-#define _8KB        0x2000
-#define _6KB        0x1800
-#define _4KB        0x1000
-#define _2KB        0x800
-#define _1KB        0x400
-#define _64B        0x40
-#define _16B        0x10
+#define _4GB      0x100000000
+#define _2GB      0x80000000
+#define _1GB      0x40000000
+#define _512MB    0x20000000
+#define _256MB    0x10000000
+#define _128MB    0x8000000
+#define _64MB     0x4000000
+#define _16MB     0x1000000
+#define _8MB      0x800000
+#define _4MB      0x400000
+#define _2MB      0x200000
+#define _1MB      0x100000
+#define _512KB    0x80000
+#define _256KB    0x40000
+#define _128KB    0x20000
+#define _64KB     0x10000
+#define _32KB     0x8000
+#define _16KB     0x4000
+#define _12KB     0x3000
+#define _8KB      0x2000
+#define _4KB      0x1000
+#define _2KB      0x800
+#define _1KB      0x400
+#define _64B      0x40
+#define _16B      0x10
 
-#define PAGE4K      0x1000
-#define PAGE2M      0x200000
-#define PAGE4M      0x400000
+#define PAGE4K    0x1000
+#define PAGE2M    0x200000
 
-#define _4GB_MASK   (~(_4GB - 1))
-#define _2GB_MASK   (~(_2GB - 1))
-#define _1GB_MASK   (~(_1GB - 1))
-#define _512MB_MASK (~(_512MB - 1))
-#define _256MB_MASK (~(_256MB - 1))
-#define _128MB_MASK (~(_128MB - 1))
-#define _64MB_MASK  (~(_64MB - 1))
-#define _16MB_MASK  (~(_16MB - 1))
-#define _8MB_MASK   (~(_8MB - 1))
-#define _4MB_MASK   (~(_4MB - 1))
-#define _2MB_MASK   (~(_2MB - 1))
-#define _1MB_MASK   (~(_1MB - 1))
+#define _2MB_MASK (~(_2MB - 1))
 
-#define _512KB_MASK (~(_512KB - 1))
-#define _256KB_MASK (~(_256KB - 1))
-#define _128KB_MASK (~(_128KB - 1))
-#define _64KB_MASK  (~(_64KB - 1))
-#define _32KB_MASK  (~(_32KB - 1))
-#define _16KB_MASK  (~(_16KB - 1))
-#define _8KB_MASK   (~(_8KB - 1))
-#define _4KB_MASK   (~(_4KB - 1))
-#define _1KB_MASK   (~(_1KB - 1))
-#define _64B_MASK   (~(_64B - 1))
-#define _16B_MASK   (~(_16B - 1))
+#define _4KB_MASK (~(_4KB - 1))
 
 //-----------------------------------------------------------------------------
 // Maximal values fpr types
 //-----------------------------------------------------------------------------
-#define MAX_QWORD ((UINT64) 0xFFFFFFFFFFFFFFFF)
-#define MAX_DWORD ((UINT32) 0xFFFFFFFF)
-#define MAX_WORD  ((UINT16) 0xFFFF)
-#define MAX_BYTE  ((UINT8) 0xFF)
+#define MAX_QWORD      ((UINT64) 0xFFFFFFFFFFFFFFFF)
+#define MAX_DWORD      ((UINT32) 0xFFFFFFFF)
+#define MAX_WORD       ((UINT16) 0xFFFF)
 
-//-----------------------------------------------------------------------------
-// ACM module header "FLAGS" field control bits.
-// BIT15 is set to indicate DEBUG signed module.
-// BIT14 is set to indicate NPW module. Flags are intended to be ORed
-// if needed.
-//-----------------------------------------------------------------------------
-#define MF_PRODUCTION      0
-#define MF_DEBUG           BIT15
-#define MF_PROD_WORTHY     0
-#define MF_NOT_PROD_WORTHY BIT14
+#define MF_PROD_WORTHY 0
 
 //-----------------------------------------------------------------------------
 // LCP element selection. Convinient to keep it here since they are
@@ -290,36 +196,14 @@ typedef struct {
 // cause sintax error if LCP.H is not included in file being compiled.
 //-----------------------------------------------------------------------------
 
-#define LCP_POLELT_TYPE_MLE              0
-#define LCP_POLELT_TYPE_PCONF            1
+#define LCP_POLELT_TYPE_MLE    0
+#define LCP_POLELT_TYPE_PCONF  1
 
-#define LCP_POLELT_TYPE_CUSTOM           3
-#define LCP_POLELT_TYPE_STM              4
-#define LCP_ELT_TYPE_MASK                0xF
-#define LCP_ELT_TYPE2_MASK               0xF0
+#define LCP_POLELT_TYPE_CUSTOM 3
+#define LCP_POLELT_TYPE_STM    4
 
-#define LCP_POLELT_TYPE_MLE_SUPPORTED    BITN(LCP_POLELT_TYPE_MLE)
-#define LCP_POLELT_TYPE_PCONF_SUPPORTED  BITN(LCP_POLELT_TYPE_PCONF)
-
-#define LCP_POLELT_TYPE_CUSTOM_SUPPORTED BITN(LCP_POLELT_TYPE_CUSTOM)
-#define LCP_POLELT_TYPE_STM_SUPPORTED    BITN(LCP_POLELT_TYPE_STM)
-
-//-----------------------------------------------------------------------------
-// Leaf value (in eax) calling GETSEC
-//-----------------------------------------------------------------------------
-#define CAPABILITIES 0
-#define ENTERACCS    2
-#define EXITAC       3
-#define SENTER       4
-#define SEXIT        5
-#define PARAMETERS   6
-#define SMCTRL       7
-#define WAKEUP       8
-
-//-----------------------------------------------------------------------------
-// Max loop count for Param5 search
-//-----------------------------------------------------------------------------
-#define MAX_PARAM5_COUNT 10 // Sighting #3864941
+#define ENTERACCS              2
+#define SENTER                 4
 
 //-----------------------------------------------------------------------------
 // Control registers
@@ -327,28 +211,15 @@ typedef struct {
 //
 // CR0 bits
 //
-#define CR0_PE BIT0
-#define CR0_EM BIT2
-#define CR0_TS BIT3
-#define CR0_ET BIT4
-#define CR0_NE BIT5
-#define CR0_WP BIT16
-#define CR0_NW BIT29
-#define CR0_CD BIT30
-#define CR0_PG BIT31
+#define CR0_PE         BIT0
+#define CR0_ET         BIT4
+#define CR0_NE         BIT5
+#define CR0_WP         BIT16
+#define CR0_PG         BIT31
 
-//
-// CR4 bits
-//
-#define CR4_VME        BIT0
-#define CR4_PVI        BIT1
-#define CR4_TSD        BIT2
 #define CR4_DE         BIT3
-#define CR4_PSE        BIT4
 #define CR4_PAE        BIT5
-#define CR4_MSE        BIT6
 #define CR4_PGE        BIT7
-#define CR4_PCE        BIT8
 #define CR4_OSFXSR     BIT9
 #define CR4_OSXMMEXCPT BIT10
 #define CR4_LA57       BIT12
@@ -359,6 +230,7 @@ typedef struct {
 #define CR4_SMEP       BIT20
 #define CR4_SMAP       BIT21
 #define CR4_CET        BIT23
+#define CR4_LASS       BIT27
 
 //-----------------------------------------------------------------------------
 // CPUID family/model/stepping masks
@@ -366,176 +238,37 @@ typedef struct {
 
 #define CPUID_XTENDED_FAMILY (0xFF << 20)
 #define CPUID_XTENDED_MODEL  (0xF << 16)
-#define CPUID_TYPE           (0x3 << 12)
 #define CPUID_FAMILY         (0xF << 8)
 #define CPUID_MODEL          (0xF << 4)
-#define CPUID_STEPPING       (0xF << 0)
 #define CPUID_FMS_MASK       (CPUID_XTENDED_FAMILY + CPUID_XTENDED_MODEL + CPUID_FAMILY + CPUID_MODEL)
 
 //-----------------------------------------------------------------------------
 // SHAXXX hash
 //-----------------------------------------------------------------------------
 
-#define H_LEN           20
-#define H256_LEN        32
-#define HASH_ALG_SHA1   0x0
-#define HASH_ALG_SHA256 0x1
-
-//-----------------------------------------------------------------------------
-// Memory Controller
-//-----------------------------------------------------------------------------
-#define MC_NOT_PRESENT     0x0
-#define MC_1_PRESENT       0x1
-#define MC_2_PRESENT       0x2
-#define MC_1_AND_2_PRESENT 0x3
+#define H_LEN 20
 
 //-----------------------------------------------------------------------------
 // MSRs. Place only architectural, not CPU specific MSRs here
 //-----------------------------------------------------------------------------
 
-#define MSR_IA32_PLATFORM_ID 0x017
-#define MSR_IA32_APIC_BASE   0x01B
-#define MSR_PLATFORM_INFO    0xCE
-
-#define MSR_ACM_PUBLIC_KEY0  0x20
-#define MSR_ACM_PUBLIC_KEY1  0x21
-#define MSR_ACM_PUBLIC_KEY2  0x22
-#define MSR_ACM_PUBLIC_KEY3  0x23
-//
-// Local APIC register offsets.
-//
-#define SPURIOUS_INTERRUPT_VECTOR_REG 0xF0
-#define LVT_CMCI_REG                  0x2F0
-#define LVT_ICR_LO                    0x300
-#define LVT_ICR_HI                    0x310
-#define LVT_TIMER_REG                 0x320
-#define LVT_THERMAL_MONITOR_REG       0x330
-#define LVT_LINT0_REG                 0x350
-#define LVT_LINT1_REG                 0x360
-#define LVT_ERROR_REG                 0x370
+#define MSR_PLATFORM_INFO 0xCE
+#define MSR_CACHE_FLUSH   0x10B //architecturally supported in both BigCore and Atom post-JVL
+#define CACHE_FLUSH_CMD   BIT0
 
 typedef struct _LAPIC_REG_SAVE {
   UINT32 RegIdx;
   UINT32 RegVal;
 } LAPIC_REG_SAVE;
 
-#define MSR_CORE_THREAD_COUNT          0x035
-#define MSR_IA32_FEATURE_CONTROL       0x03A
-#define     FEATURE_CONTROL_LOCK       BIT0
-#define     VMXON_IN_SMX_ENABLE        BIT1
-#define     VMXON_OUT_SMX_ENABLE       BIT2
-#define     SENTER_ENABLE              0xFF00
-#define     SGX_ENABLE                 (BIT18 + BIT0)
-#define MSR_IA32_BIOS_SIGN_ID          0x08B
-#define MSR_IA32_SMM_MONITOR_CTL       0x09B
-#define MSR_PKG_CST_CONFIG_CTL         0x0E2
-#define MSR_PMG_IO_CAPTURE_BASE        0x0E4
-#define MSR_IA32_MTRRCAP               0x0FE
-  #define VCNT_MASK                    0xFF
+#define MSR_IA32_BIOS_SIGN_ID 0x08B
 
-#define MSR_BTG_BOOT_POLICY            0x130
-#define MSR_BTG_BP_KEY0                0x131
-#define MSR_BTG_BP_KEY1                0x132
-#define MSR_BTG_BP_KEY2                0x133
-#define MSR_BTG_BP_KEY3                0x134
-#define MSR_BTG_BP_KEY4                0x135
-#define MSR_BTG_BP_KEY5                0x136
-#define MSR_BTG_BP_RSVD3               0x137
-#define MSR_BTG_BOOT_STATUS            0x138
-#define MSR_BTG_SACM_INFO              0x13A
-  #define SPIRAL_DMI_AUTH_SUPPORT      BIT36
-  #define CPU_MEMLOCK_DISABLE          BIT35
-  #define LT_SX_FUSE                   BIT34
-  #define BTG_FUSE                     BIT32
-  #define NEM_ENABLED                  BIT0
+#define MSR_BTG_BOOT_STATUS   0x138
 
-#define IA32_SGX_SVN_STATUS            0x500
+#define MSR_SGX_DEBUG_MODE    0x503
+#define MSR_IA32_MISC_ENABLES 0x1A0
 
-#define SMRR_0                         0
-#define SMRR_2                         2
-
-#define MSR_SGX_DEBUG_MODE             0x503
-#define MSR_IA32_MISC_ENABLES          0x1A0
-#define MSR_IA32_MISC_ENABLES_BOOT_NT4 BIT22
-#define MSR_SMRR_PHYBASE               0x1F2
-#define MSR_SMRR_PHYMASK               0x1F3
-#define MSR_SMRR2_PHYBASE              0x1F6
-#define MSR_SMRR2_PHYMASK              0x1F7
-#define MSR_IA32_MTRR_PHYSBASE0        0x200
-#define MSR_IA32_MTRR_PHYSMASK0        0x201
-#define MSR_IA32_MTRR_PHYSBASE1        0x202
-#define MSR_IA32_MTRR_PHYSMASK1        0x203
-#define MSR_IA32_MTRR_PHYSBASE2        0x204
-#define MSR_IA32_MTRR_PHYSMASK2        0x205
-#define MSR_IA32_MTRR_PHYSBASE8        0x210
-#define MSR_IA32_MTRR_PHYSMASK8        0x211
-#define MSR_IA32_MTRR_PHYSBASE9        0x212
-#define MSR_IA32_MTRR_PHYSMASK9        0x213
-  #define LO_PHYS_BASE_MASK            0xFFFFF000
-  #define PHYS_BASE_TYPE_MASK          0xFF
-  #define PHYS_MASK_VALID              BIT11
-  #define LO_PHYS_MASK_MASK            0xFFFFF000
-#define MAX_SUPPORTED_MTRR_COUNT       16
-
-#define MTRR_FIX_64K_00000             0x250
-#define MTRR_FIX_16K_80000             0x258
-#define MTRR_FIX_16K_A0000             0x259
-#define MTRR_FIX_4K_C0000              0x268
-#define MTRR_FIX_4K_C8000              0x269
-#define MTRR_FIX_4K_D0000              0x26A
-#define MTRR_FIX_4K_D8000              0x26B
-#define MTRR_FIX_4K_E0000              0x26C
-#define MTRR_FIX_4K_E8000              0x26D
-#define MTRR_FIX_4K_F0000              0x26E
-#define MTRR_FIX_4K_F8000              0x26F
-
-#define BUS_WIDTH_36                   0
-#define BUS_WIDTH_ACTUAL               1
-
-#define MSR_PROBE_MODE                 0x6B
-    #define PROBE_MODE_OCCURRED        BIT0
-
-#define MSR_NO_EVICT_MODE              0x2E0
-#define MSR_NO_EVICT_MODE_RUNSET_BIT   0x3
-
-#define MSR_LTCTRLSTS                  0x2E7
-  #define CONFIGLOCK                   BIT0
-  #define SCHECK_PASS                  BIT4
-  #define CONFIGUNLOC                  BIT16
-  #define MEMLOCK_CPU_CLR              BIT17
-  #define SCHECK_PASS_CLR              BIT20
-
-#define MSR_EDRAM_ACM                  0x2E8
-#define EDRAM_EXISTS                   BIT2
-#define EDRAM_IS_DISABLED              BIT1
-#define FORCE_EDRAM_DISABLED           BIT0
-
-#define MSR_IA32_MTRR_DEF_TYPE         0x2FF
-#define DEF_MEM_TYPE_MASK              0x7
-#define DEF_FIX_MTRR_ENABLE            BIT10
-#define DEF_VAR_MTRR_ENABLE            BIT11
-
-#define MSR_BUS_NUM                    0x300
-
-#define MSR_IA32_VMX_BASIC             0x480
-#define MSR_IA32_VMX_MISC              0x485
-
-#define MSR_UNC_CBO_CONFIG             0x396
-//
-// PRMRR_BASE location changed to 0x2A0
-//
-#define MSR_PRMRR_BASE      0x2A0
-#define MSR_PRMRR_MASK      0x1F5
-
-#define MSR_BIOS_DONE       0x151
-
-#define MSR_FLEX_RATIO      0x194
-#define B_OVERCLOCKING_LOCK BIT20
-#define B_OVERCLOCKING_BINS (0x7 << 17)
-
-#define MSR_BIOS_SE_SVN     0x302
-
-#define MSR_MKTME_ACTIVATE  0x982
+#define MSR_BIOS_DONE         0x151
 
 //   #define SINIT_SE_SVN_MASK      (~0xFF0000)
 //   #define BIOSAC_SE_SVN_MASK     (~0xFF000000)
@@ -543,12 +276,6 @@ typedef struct _LAPIC_REG_SAVE {
 //   #define SINIT_SE_SVN_SHIFT     16
 //   #define BIOSAC_SE_SVN_SHIFT    24
 
-//
-// SPIRAL related MSRs
-//
-#define MSR_SPIRAL_UCODE_SVN 0x1130 // Returns the security version number of CPU microcode (Read only)
-
-#define MSR_SPIRAL_CSME_CTRL 0x1131 // Interface to communicate SPIRAL info to CSME
 typedef union {
   struct {
     UINT32 VALID      : 1;  // [0]     [RW/1S/V] Spiral buffer Valid
@@ -561,10 +288,6 @@ typedef union {
   UINT32 raw;
 } SPIRAL_CSME_CTRL_t; // maps to MSR_SPRIRAL_CSME_READ_DATA
 
-// SPIRAL_CSME_DATA_ACCESS
-// This is a virtual MSR. Read access map to addresses with LT space that
-// ACM can't directly access. Reads come from 0xFED58D40/44, Writes go to 0xFED58D80/84
-#define MSR_SPIRAL_CSME_DATA_ACCESS 0x1132
 typedef struct {
   UINT32 SPIRAL_DATA_LO;     // [31:0]  Contains data found at SPIRAL_CSME_CTRL.OFFSET
   UINT32 SPIRAL_DATA_HI;     // [63:32] Contains data found at SPIRAL_CSME_CTRL.OFFSET+4
@@ -581,17 +304,6 @@ typedef struct {
   UINT32                  : 4;  // [31:28] reserved
 } SPIRAL_CSME_ACCESS_CTRL_t;    // Maps to MSR_SPIRAL_CSME_ACCESS_CTRL
 
-// MSRs for accessing Seed Passwords and other Microcode Spiral Data
-//
-#define MSR_SPIRAL_ACM_ACCESS_INDEX  0x1134 // Used to specify a different QWORD within a SPIRAL array
-#define MSR_SPIRAL_SHARED_SECRET_2   0x1135 //
-#define MSR_SPIRAL_SEED_ID           0x1136 // Returns the 32-byte Seed ID
-#define MSR_SPIRAL_CR_SIGNATURE      0x1137 // Returs signature of CPU root cert
-#define MSR_SPIRAL_SEED_PASSWORD_2_1 0x1138 // This MSR returs SP2 (SP_1_p_n_32)
-#define MSR_SPIRAL_SEED_PASSWORD_2_2 0x1139 // This MSR returs SP2 (SP_2_p_n_32)
-#define MSR_SPIRAL_SEED_PASSWORD_2_3 0x113A // This MSR returs SP2 (SP_3_p_n_32)
-#define MSR_SPIRAL_SEED_PASSWORD_2_4 0x113B // This MSR returs SP2 (SP_4_p_n_32)
-
 //
 // FLOOR and CEILING definitions. CEILING use requires 64 bit output
 // values. This is because output value may become over 4GB even if
@@ -604,35 +316,11 @@ typedef struct {
 #define FLOOR(addr, interval)   ((((UINT64)addr)) & (~((UINT64)((interval) - 1))))
 #define CEILING(addr, interval) (FLOOR((addr), (interval)) == addr ? addr : ((UINT64)FLOOR((addr), (interval)) + (UINT64)interval))
 
-#define MTRR_MEMORY_TYPE_UC          00
-#define MTRR_MEMORY_TYPE_WC          01
-#define MTRR_MEMORY_TYPE_WT          04
-#define MTRR_MEMORY_TYPE_WP          05
-#define MTRR_MEMORY_TYPE_WB          06
+#define IA32_EFER_MSR   0xC0000080
+#define LME             BIT8
+#define N_IA32_EFER_LMA BIT10
+#define N_IA32_EFER_NXE BIT11
 
-#define MTRR_MIN_RANGE               0x1000
-
-#define MSR_DEBUG_INTERFACE          0xC80
-#define DEBUG_HAS_OCCURED            BIT31
-#define DEBUG_LOCK                   BIT30
-#define DEBUG_ENABLE                 BIT0
-
-#define IA32_EFER_MSR                0xC0000080
-#define N_IA32_EFER_SCE              BIT0
-#define LME                          BIT8
-#define N_IA32_EFER_LMA              BIT10
-#define N_IA32_EFER_NXE              BIT11
-
-#define TPM_BLOCK_TRANSFER_64B_INDEX 0
-#define TPM_BLOCK_TRANSFER_32B_INDEX 1
-#define TPM_BLOCK_TRANSFER_8B_INDEX  2
-#define TPM_BLOCK_TRANSFER_4B_INDEX  3
-
-#define CPY_BLOCK_TRANSFER_64B_INDEX 0
-#define CPY_BLOCK_TRANSFER_32B_INDEX 1
-#define CPY_BLOCK_TRANSFER_16B_INDEX 2
-#define CPY_BLOCK_TRANSFER_8B_INDEX  3
-#define CPY_BLOCK_TRANSFER_4B_INDEX  4
 //-----------------------------------------------------------------------------
 // TXT register space
 //-----------------------------------------------------------------------------
@@ -640,10 +328,8 @@ typedef struct {
 #define LT_PUB_BASE 0xFED30000
 #define LT_PRV_BASE 0xFED20000
 
-#define FILL64(H, L)  ((((H)-(L)) / 8) - 1)
-#define FILL8(H, L)   (((H)-(L)) - 1)
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define FILL64(H, L) ((((H)-(L)) / 8) - 1)
+#define FILL8(H, L)  (((H)-(L)) - 1)
 
 typedef struct _TXT {
   UINT64 LT_STS;               // 0000h
@@ -834,18 +520,6 @@ typedef struct {
   } HighWrd;
 } REG_E2STS;
 
-//
-// SPAD measurement indications (values are assumed shifted to bits [1:0].
-// Bits 63:62 = 10b - success
-// Bits 63:62 = 01b - authentication failure
-//
-#define SPAD_STATUS_OFFSET 62
-#define SPAD_AUTH_SUCCESS  2
-#define SPAD_AUTH_FAILURE  1
-
-// LT_SCRATCHPAD_4 bits used for Server ACM TXT signalling.
-#define SCRATCHPAD_4_LOCK_LOW BIT31
-
 //-----------------------------------------------------------------------------
 // ACM - PE2BIN communication area
 //-----------------------------------------------------------------------------
@@ -857,19 +531,6 @@ typedef struct _COM_DATA {
   UINT32 StkStart;    // Offset of stack start
   UINT32 Code32Start; // Offset of code segment start.
 } COM_DATA;
-
-//-----------------------------------------------------------------------------
-// LTSX / Client TXT origin
-//-----------------------------------------------------------------------------
-#define LTSX_FUSED       BIT0
-#define CLIENT_TXT_FUSED 0
-
-//-----------------------------------------------------------------------------
-// Save state map.
-//-----------------------------------------------------------------------------
-#define SMM_REV_ID_0 0x0030100
-#define SMM_REV_ID_1 0x0030101
-#define IEDBASE_DEF  0x0050000
 
 typedef struct _SAVE_STATE_MAP {
   UINT8  Res[0xFEEC];
@@ -892,7 +553,6 @@ typedef struct _SAVE_STATE_MAP {
 #define CRASH_CODE_SW_GENERATED 0x40000000
 
 #define CPU_AUTH_ERR            0x7
-#define CRASH_CODE_CPU_AUTH_ERR CRASH_CODE_VALID + CPU_AUTH_ERR
 
 //
 //  Error context variable.
@@ -909,18 +569,6 @@ typedef struct _ERR_CONTEXT {
 //
 #define VOID -1
 
-//
-// Behavior of TPM access functions when error is detected
-//
-#define RESET_ON_ERROR    0
-#define NO_RESET_ON_ERROR 1
-
-//
-// Trampoline code related
-//
-#define GENERIC_CALL    0
-#define TRAMPOLINE_CALL 1
-
 #include <AcmErr.h>
 #include <AcmErrExtend.h>
 
@@ -934,98 +582,7 @@ typedef struct _ERR_CONTEXT {
 // must be one and only one range with the same attribute.
 //
 
-#define RFA_EXCLUSIVE_MIN BIT0  // Maximum defined exclusive attribute
-#define RFA_DPR           BIT0  // DPR
-#define RFA_UMA           BIT1  // UMA
-#define RFA_PCI_LO        BIT2  // Low PCI range
-#define RFA_PCI_HI        BIT3  // High PCI range
-#define RFA_USED_DRAM_LO  BIT4  // Low used DRAM
-#define RFA_USED_DRAM_HI  BIT5  // High used DRAM
-#define RFA_TSEG          BIT6  // TSEG
-#define RFA_GFX_UMA       BIT7  // PMR
-#define RFA_FLASH         BIT8  // FLASH
-#define RFA_EXCLUSIVE_MAX BIT8  // Maximum defined exclusive attribute
-
-#define RFA_INCLUSIVE_MIN BIT9  // Maximum defined exclusive attribute
-#define RFA_PCI_ANY       BIT9  // Hight or Low PCI range
-#define RFA_USED_DRAM_ANY BIT10 // High or Low used DRAM
-#define RFA_DMA_ANY       BIT11 // DPR or PMR
-#define RFA_INCLUSIVE_MAX BIT11 // Maximum defined exclusive attribute
-
-#define RFA_VALID         BIT15 // Range is valid flag.
-
-//
-// Common labels.
-//
-// Some of the ranges will never be handled separately - only as a
-// group. LBL_PCI_NON_SPECIFIC label is used to mark such ranges
-//
-#define LBL_ACM              BIT0
 #define LBL_PCI_NON_SPECIFIC BIT1
-#define LBL_GEN_NON_SPECIFIC BIT2
-#define LBL_MCHBAR_REG       BIT3
-
-#define LBL_HEAP             BIT5
-#define LBL_ME               BIT6
-#define LBL_TSEG             BIT7
-#define LBL_SINIT            BIT8
-#define LBL_LAPIC            BIT9
-#define LBL_ISA_HOLE         BIT10
-#define LBL_LEGACY           BIT11
-
-#define LBL_TOUUD            BIT12
-#define LBL_LO_PCI           BIT13
-#define LBL_DPR              BIT14
-#define LBL_LO_DRAM          BIT15
-#define LBL_HI_DRAM          BIT16
-#define LBL_UMA              BIT17
-
-#define LBL_SMRR             BIT18
-#define LBL_PMRL             BIT19
-#define LBL_PMRH             BIT20
-#define LBL_PMRL_RQU         BIT21
-#define LBL_PMRH_RQU         BIT22
-
-#define LBL_DMAR             BIT23
-#define LBL_RMRR             BIT24
-#define LBL_RMRR_GFX         BIT25
-
-#define LBL_LCP_PO           BIT26
-#define LBL_HI_PCI           BIT27
-#define LBL_FLASH            BIT28
-#define LBL_REMAP            BIT29
-#define LBL_GTT              BIT30
-#define LBL_GM               BIT31
-#define LBL_DMAR_BAR0        BIT32
-#define LBL_DMAR_BAR1        BIT33
-#define LBL_DMAR_BARX        BIT34
-#define LBL_PQA              BIT35
-
-#define LBL_4GBMEM           BIT36
-#define LBL_ELOG             BIT37
-#define LBL_MADT             BIT38
-#define LBL_MSI              BIT39
-#define LBL_PAVPC            BIT40
-#define LBL_UMAGFX           BIT41
-#define LBL_CRAB             BIT42 // base=0xFEB0_0000, size=64KB
-#define LBL_SMRR2            BIT43
-#define LBL_HEAP_OS2MLE      BIT44
-#define LBL_HPET             BIT45
-#define LBL_GTMEM            BIT46
-
-#define LBL_SGX              BIT47
-#define LBL_MCFG             BIT48
-#define LBL_IMR              BIT49 // IMR
-#define LBL_IA_EXC           BIT50 // Exclusion range IMR
-#define LBL_GT_EXC           BIT51 // Exclusion range IMR
-#define LBL_TBT              BIT52 // TB- Thunderbolt VTD
-
-#define LBL_FIT_OBJ          BIT53
-#define LBL_DTPR             BIT54
-#define LBL_TPR              BIT55
-#define LBL_TPR_RQU          BIT56
-#define LBL_CEDT             BIT57
-#define LBL_IBB_SEG          BIT58
 
 typedef struct _RANGE {
   UINT64 labl;  // Label - GHX, ISA hole etc.
@@ -1044,25 +601,16 @@ typedef struct _RANGE {
 #define BELOW         BIT4
 #define TANGENT_ABOVE BIT5
 #define TANGENT_BELOW BIT6
-#define OVERLAPS      BIT7
 
 #define TANGENT       (TANGENT_ABOVE + TANGENT_BELOW)
 #define DISJOINT      (ABOVE + BELOW)
-#define SEPARATE      (TANGENT + DISJOINT)
-#define COVERS        (ENCLOSES + CONGRUENT)
-#define INCLUDED      (CONTAINED + CONGRUENT)
 
-#define ALL           -1 // all items
 #define ANY           -1 // any value
-#define TBD           0  // Parameter to be calculated
 
 //-----------------------------------------------------------------------------
 // Parameters passed to page retrieval function to indicate first
 // call or subsequent call.
 //-----------------------------------------------------------------------------
-
-#define FIRST_PAGE     0
-#define NEXT_PAGE      1
 
 #define MAX_LEN_BOUND  0
 #define MAX_ADDR_BOUND ~MAX_LEN_BOUND
@@ -1113,59 +661,27 @@ UINT16 Compare(const UINT8 Order, const UINT16 CmpWidth, const void *First, cons
 void Sort(void *Array, UINT16 Count, UINT16 EltWidth, UINT16 CmpOffset, UINT8 Order, UINT16 CmpWidth,
           UINT16 (*Compare)(const UINT8 Order, const UINT16 CmpWidth, const void *First, const void *Second));
 
-#define Sort_Range_Up(Array, Count) Sort(Array, Count, sizeof(RANGE), offsetof(RANGE, base), _UP, 8, Compare)
-#define Sort_Range_Dn(Array, Count) Sort(Array, Count, sizeof(RANGE), offsetof(RANGE, base), _DN, 8, Compare)
-#define Sort_Mtrr_Up(Array, Count)  Sort(Array, Count, sizeof(MTRR), offsetof(MTRR, base), _UP, 8, Compare)
-#define Sort_Mtrr_Dn(Array, Count)  Sort(Array, Count, sizeof(MTRR), offsetof(MTRR, base), _DN, 8, Compare)
-
-UINT32 compareHashX(UINT8 *, UINT8 *, UINT16);
-UINT32 compareData(UINT8 *, UINT8 *, UINT32);
-UINT32 isZeroHashX(UINT8 *, UINT16);
 void Movdir64B(const void *, void *);
-void SinitThunk64();
-void BiosacThunk64();
 void SeamldrThunk64();
-void CoreBuildPml5Tables(UINT32);
-void CoreBuildPml4Tables(UINT32);
-void CoreBuildPml4TablesShort(UINT32);
-void CoreBuildPseTables(UINT32);
-void EnablePaging();
 void CoreAcmErrorHandler(UINT32, UINT32);
 void ProgressMark(UINT8);
 void LtReset();
 void __ErrorHandler(UINT32, UINT32);
-void cpyAndZap(UINT8 *, UINT32, UINT8 *, UINT32);
-void ChipsetCpuPresenceTest();
 void __readMsr(UINT32, UINT32 *, UINT32 *);
 UINT64 __readMsr64(UINT32);
-UINT64 ReadMsr64WithInput(UINT32 msr_addr, UINT32 edx_in, UINT32 eax_in);
 void __writeMsr(UINT32, UINT32, UINT32);
 void __writeMsr64(UINT32, UINT64);
 void _ud2(void);
 UINT64 readTsc64();
-void CheckMTRR(UINT32);
-void CheckLtCpu();
-void VerifyMicrocode();
-void SinitExitPoint();
-void BiosacExitPoint();
-void StartupExitPoint();
-void SinitLtsxExitPoint();
-void SinitRtcCheck();
+void WriteCr3(UINT64);
+UINT64 ReadCr3();
 void ProbeMchBar(UINT64);
 void ServerProbeBar(UINT64);
-void SinitGetGTData(void);
-UINT16 GetDigestSize(UINT16);
 void __Wait10us();
-void ShutdownS5();
-UINT32 HashAlgIdToIdx(UINT16);
-void SetTxtFail();
-void SetTxtDisabled();
-void SendEnfNotification();
-void AcmUnhandledErrorExit();
-void ForceTopSwap();
-UINT8 SecretsProtectionSupported();
-void ForceClearSecrets();
 UINT32 get_esp(void);
+
+void __writecr3(unsigned __int64 value);
+#pragma intrinsic(__writecr3)
 
 #if TRACE_WITH_FUNCTIONS & TRACE_MSR
 
@@ -1243,32 +759,18 @@ UINT32 areRangesContiguous(
   UINT64
   );
 
-UINT64 GetRangeAlignmentMask(UINT64);
-
 UINT64 shiftLeft64(UINT64, UINT32);
 
-UINT32 rangeCheck(RANGE *);
-
 UINT32 arrayCheck(RANGE *[], UINT32, UINT64);
-UINT32 basicArrayCheck(UINT64);
-UINT32 verifyRangesSeparate(RANGE *, UINT32, UINT64);
-void FillSmrrRange(UINT32);
 
-UINT32 compareTwoRanges(RANGE *, RANGE *);
-UINT32 compareAddressToRange(UINT64, RANGE *);
 UINT32 BitScanForward64(UINT32 *, UINT64);
 UINT32 BitScanReverse64(UINT32 *, UINT64);
 UINT32 BitScanForward64AndReset(UINT32 *, UINT64 *);
 UINT32 BitScanReverse64AndReset(UINT32 *, UINT64 *);
 UINT32 BitScanForwardAndReset(UINT32 *, UINT32 *);
 UINT32 BitScanReverseAndReset(UINT32 *, UINT32 *);
-void SetupCpuFeatures();
-void RestoreCpuFeatures();
 UINT32 GetSgxFusingInfo();
-void SgxProtection();
 void Update_CRx();
-void InitializeHeaderData();
-void DualSignedHeaderCheck();
 void x86_copy8b(UINT8 *, UINT8 *);
 void x86_copy16b(UINT8 *, UINT8 *);
 void x86_copy32b(UINT8 *, UINT8 *);
@@ -1276,24 +778,11 @@ void x86_copy64b(UINT8 *, UINT8 *);
 
 typedef UINT32 (*GET_DATA)                (UINT32, UINT32 *, UINT32 *);
 //void    getPcrValue                       (UINT32, UINT8 *);
-UINT32 GetSmBase();
-UINT32 strLen(char *);
 
-void SaveLapicRegisters(UINT32);
-void RestoreLapicRegisters(UINT32);
 UINT32 GetMaxPhyAddr();
 UINT64 GetPhyAddrMask();
 UINT32 GetCpuFms();
-UINT32 Swap(void *, UINT32);
 
-void SaveUnlockLtLock();
-void RestoreRelockLtLock();
-void AuxRevocationCheck();
-void AuxDetection();
-UINT32 IsFlashAcm();
-BOOL TxtBiosVerification();
-
-void DoNothing();
 void SignalSinitScheckWasRun();
 void VerifySinitScheckWasRun();
 void ServerSignalSinitScheckWasRun();
@@ -1301,14 +790,7 @@ void ServerVerifySinitScheckWasRun();
 void ClientHandleTopSwap();
 void ServerHandleTopSwap();
 
-void RestoreRelockBiosDoneLock();
-void SaveUnlockBiosDoneLock();
-void SinitBtgBootPolChk();
-void executeGetSec(UINT32, UINT32);
-void CheckSeSvn();
 INT32 perform_ebp_checks(UINT32 dest, UINT32 size);
-INT32 perform_ebp_checks64(UINT64 dest, UINT32 size);
-UINT32 isPatternHashX(UINT8 *, UINT32, UINT16);
 
 UINT32 isRangeSeparate(
   RANGE *,
@@ -1317,11 +799,7 @@ UINT32 isRangeSeparate(
   UINT64
   );
 
-void ReadVtgCfgBars();
-void coreTpm20Shutdown(UINT16);
-UINT32 GetDate();
 UINT32 validateRangePlacement(RANGE *);
-UINT32 InitSio();
 BOOL BtgProfile3Handling();
 
 #define HOOK(A) Hook ## A
@@ -1412,30 +890,17 @@ UINT32 NullHeciDeviceDwordRegister(UINT32);
 #define HookWriteHeciDeviceDwordRegister
 #endif
 
-void EndBenchmark();
-void CmosSave(void *, UINT32, UINT32);
-UINT32 getsecParameters(UINT32, UINT32 *, UINT32 *, UINT32 *, UINT32);
-void LongJump(void *);
-UINT32 RdrandProc();
-void GetRandomDwords(UINT32 *buf, UINT32 num_dwords);
-
-UINT32 GetStrongestHashAlgId(UINT32 HashAlgMask);
-
 void WaitFixedTime(UINT32);
 #define Wait100ms() WaitFixedTime(100)
-#define Wait1s()    WaitFixedTime(1000)
 
 UINT32 TinyWaitRegisterValue(UINT32, UINT32, UINT32, UINT32, UINT32, UINT32);
 #define In10USEC 0
 #define In1MSEC  1
 
 UINT32 BaseWaitMsrValue(UINT32, UINT64, UINT32, UINT64, UINT32, UINT32);
-#define WaitMsrValue(A, B, C, D, E)     BaseWaitMsrValue(A, B, C, D, E, In1MSEC)
-#define TinyWaitMsrValue(A, B, C, D, E) BaseWaitMsrValue(A, B, C, D, E, In10USEC)
 
 UINT32 __WaitRegisterBitSet(UINT32, UINT32);
 UINT32 __WaitRegisterBitClear(UINT32, UINT32);
-UINT32 SafeAdd(UINT32, void *, void *, void *);
 
 #ifndef HI_SMRR_MASK
 #define HI_SMRR_MASK 0
@@ -1530,7 +995,6 @@ extern RANGE R_MSI;
 extern RANGE R_CRAB;
 extern RANGE R_HPET;
 extern RANGE R_SMRR2;
-#define R_ELOG_SHA1 R_ELOG
 extern RANGE R_ELOG;
 extern RANGE R_ELOG_SHA256;
 extern RANGE R_ELOG_SHA384;
@@ -1624,7 +1088,6 @@ extern RANGE_STRUCT ProjectRangeTable_0;
 
 extern RANGE *ProjectRangeTable[];
 
-#define NORETRUN __declspec(noreturn)
 #endif // MCP_CHIPSET_ACM_TYPE==AC_SINIT
 //
 // Definition help catch error at build time.

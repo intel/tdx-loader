@@ -20,9 +20,30 @@
 //
 // SPDX-License-Identifier: MIT
 
-#ifndef UART_H
-#define UART_H
+#include "common.h"
+#include "paging.h"
+#include "Header.h"
+#include "msr.h"
+#include "MemoryOps.h"
+#include "common32.h"
 
-#define COM1_BASE 0x3f8
+UINT32 ChipsetAcmType = MCP_CHIPSET_ACM_TYPE;
+UINT32 TxtErrorRegister = TXT_ERROR_REGISTER;
 
-#endif UART_H
+void ProjectAcmEntryPoint()
+{
+  PT_CTX PtCtx;
+
+  // zero scratch buffer
+  fillMemory(HeaderStart.scratch, 0, sizeof(HeaderStart.scratch));
+
+  Init64bitComArea();
+
+  (void)EstablishSeamldrPaging(&SeamldrCom64Data, &PtCtx);
+
+  SeamldrCom64Data.PtCtxPtr = (UINT64)(UINTPTR)&PtCtx | SeamldrCom64Data.AcmAslrMask;
+
+  SeamldrThunk64();
+
+  // No return to here
+}

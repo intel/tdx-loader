@@ -1,5 +1,5 @@
 // Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
+//                                                                                
 // Permission is hereby granted, free of charge, to any person obtaining a copy  
 // of this software and associated documentation files (the "Software"),         
 // to deal in the Software without restriction, including without limitation     
@@ -38,7 +38,7 @@
 #include "vmx_vmcs.h"
 #include "vmx_vmcs_accessors.h"
 #include "elf.h"
-#include "simics_breakpoint.h"
+
 
 #define _N_SEAMRR_MASK_WA_
 
@@ -46,12 +46,17 @@ void MemZeroWithMovdir64B(UINT8* dst, UINT64 size) {
     __declspec(align(MOVDIR64B_BLOCK_SIZE)) UINT8 ZeroBlock[MOVDIR64B_BLOCK_SIZE] = { 0 };
     UINT64 NumOfBlocks = size / MOVDIR64B_BLOCK_SIZE;
 
+#if (MKF_ENGINEERING==1) 
+    if (size % MOVDIR64B_BLOCK_SIZE != 0) {
+        _ud2();
+    }
+#endif
+    
     for (UINT32 Idx = 0; (UINT64)Idx < NumOfBlocks; Idx++) {
         Movdir64B(ZeroBlock, dst);
         dst += MOVDIR64B_BLOCK_SIZE;
     }
         
-
     _mm_sfence();
 }
 
@@ -134,6 +139,7 @@ UINT64 SetupKeyholeMapping(SEAMRR_PT_CTX *SeamrrPtCtx) {
 
             PrevMappedPtPa = CurMappedPtPa;
             CurEditRgnLinAddr += SEAMRR_PAGE_SIZE;
+//            Idx += (UINT64)0x123456789;
         }
         CurLinAddr += SEAMRR_PAGE_SIZE;
     }
@@ -143,7 +149,7 @@ UINT64 SetupKeyholeMapping(SEAMRR_PT_CTX *SeamrrPtCtx) {
 
 UINT64 SetupDataRegion(SEAMRR_PT_CTX *SeamrrPtCtx) {
     UINT64 CurLinAddr = C_DATA_RGN_BASE | SeamldrData.AslrRand;     
-    UINT64 CurPhysAddr = SeamldrData.SeamrrBase + SeamldrData.SeamrrSize - (_4KB + SeamldrData.PSeamldrConsts->CCodeRgnSize + SeamldrData.PSeamldrConsts->CDataStackSize + C_P_SYS_INFO_TABLE_SIZE + SeamldrData.PSeamldrConsts->CDataRgnSize);
+    UINT64 CurPhysAddr = SeamldrData.SeamrrBase + SeamldrData.SeamrrSize - (P_SEAMLDR_SHADOW_STACK_SIZE + SeamldrData.PSeamldrConsts->CCodeRgnSize + SeamldrData.PSeamldrConsts->CDataStackSize + C_P_SYS_INFO_TABLE_SIZE + SeamldrData.PSeamldrConsts->CDataRgnSize);
     UINT32 Idx;
 
     for (Idx = 0; (UINT64)Idx < SeamldrData.PSeamldrConsts->CDataRgnSize / SEAMRR_PAGE_SIZE; Idx++) {
@@ -168,6 +174,25 @@ UINT64 MapSysInfoTables(SEAMRR_PT_CTX* SeamrrPtCtx) {
         goto EXIT;
     }
 
+#ifdef _TDXIO_SUPPORT        
+    UINT32 Idx;
+    CurLinAddress += SEAMRR_PAGE_SIZE;
+    CurPhysAddress = SeamldrData.SeamrrBase + SeamldrData.SeamrrSize - C_P_SYS_INFO_TABLE_SIZE;
+
+    for (Idx = 0; Idx < C_P_IO_SYS_INF_TABLE_SIZE / PAGE4K; Idx++) {
+        if (MapPage(SeamrrPtCtx, CurLinAddress, CurPhysAddress, IA32_PG_P | IA32_PG_A | IA32_PG_NX, PAGE_4K, FALSE) == NULL) {
+            Status = NP_SEAMLDR_PARAMS_STATUS_ENOMEM;
+            COMSERIALOUT("Failed to map io sysinfo table!\n");
+            goto EXIT;
+        }
+        CurLinAddress += SEAMRR_PAGE_SIZE;
+        CurPhysAddress += SEAMRR_PAGE_SIZE;
+    }
+
+    if (SeamldrData.PSysInfoTable->IoSysInfoTableVer == 0) {        
+        MemZeroWithMovdir64B((UINT8*)(SeamldrData.SeamrrVa + SeamldrData.SeamrrSize - C_P_SYS_INFO_TABLE_SIZE), C_P_IO_SYS_INF_TABLE_SIZE);
+    }
+#endif
 
 EXIT:
     return Status;
@@ -225,30 +250,30 @@ void SetupSysInfoTable() {
 #define SPR_A0_FMS          0x806F1
 #define SPR_B0_FMS          0x806F2
 
-void ReadSeamExtendMsr(UINT64 SeamExtendAddr) {
+void ReadSeamExtendMsr(UINT64 SeamExtendAddr) {        
+    SeamExtendAddr &= (~ACM_ASLR_MASK);
     writeMsr64(MSR_IA32_SEAMEXTEND, SeamExtendAddr | 0x1);
 }
 
 void RecordSeamIdentity() {
-    __declspec(align(256)) SEAM_EXTEND_t SeamExtend = { 0 };
+  __declspec(align(256)) volatile SEAM_EXTEND_t SeamExtend = { 0 };
 
     SeamExtend.SeamReady =  SEAM_EXTEND_SEAM_READY_VAL;
     SeamExtend.SeamUnderDebug = (readMsr64(MSR_SGX_DEBUG_MODE) & BIT1) >> 1;
     SeamExtend.PSeamldrReady = SP_SEAMLDR_PLAG_READY;
-    writeMsr64(MSR_IA32_SEAMEXTEND, (UINT64) &SeamExtend);
+    writeMsr64(MSR_IA32_SEAMEXTEND, (UINT64) (&SeamExtend) & (~ACM_ASLR_MASK));
+    writeMsr64(MSR_CACHE_FLUSH, CACHE_FLUSH_CMD);
 }
 
 // main SEAMLDR flow function
 void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
-    SEAMRR_PT_CTX SeamrrPtCtx;
-    UINT16 Rrrr;
+    SEAMRR_PT_CTX SeamrrPtCtx;    
     UINT8  Comparand = NP_SEAMLDR_MUTEX_CLEAR;
     UINT8  SeamldrMutexStatus;
     UINT64 Status = NP_SEAMLDR_PARAMS_STATUS_SUCCESS;
 	BOOL MutexAcquired = FALSE;
     BOOL SEAMRRUnlocked = FALSE;
-    UINT64 CPagingStructSize;
-    UINT64 OriginalBIOSID;
+    UINT64 CPagingStructSize;    
     UINT64 ia32_misc_enable_org;
     SeamrrBase_u     SeamrrBaseMsr;
     SeamrrMask_u     SeamrrMaskMsr;
@@ -256,11 +281,8 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
 
 
     COMSERIALOUT("SeamldrAcm\n");
-    SIMICS_BREAKPOINT;
-    //     DEBUG ((EFI_D_INFO, ("SeamldrAcm\n Param struct PA: 0x%x", OriginalEDX));
 
-    // SAVE BIOS ID before the first CPUID
-    OriginalBIOSID = readMsr64(MSR_IA32_BIOS_SIGN_ID);
+    //     DEBUG ((EFI_D_INFO, ("SeamldrAcm\n Param struct PA: 0x%x", OriginalEDX));
 
     ia32_misc_enable_org = readMsr64(MSR_IA32_MISC_ENABLES);
     writeMsr64(MSR_IA32_MISC_ENABLES, ia32_misc_enable_org & (~(UINT64)IA32_CR_MISC_ENABLES_BOOT_NT4_BIT));
@@ -285,7 +307,7 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
         goto EXIT;
     }
 
-
+    // https://hsdes.intel.com/appstore/article/#/1308083915
     // Start of SEAMLDR 64-bit code:
 
     SeamldrData.SeamrrBase = (SeamrrBaseMsr.raw & B_SEAMRR_BASE);
@@ -301,7 +323,8 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
 #ifdef _SEAMRR_MASK_WA_
     // The SEAMLDR now needs to unlock the SEAMRR range so that it can read and write the memory contents of this range. 
     // The SEAMLDR does that by clearing the VALID bit in the IA32_SEAMRR_MASK register. 
-    
+
+    // https://hsdes.intel.com/appstore/article/#/1308083915
     // SEAM range unlocking:
     writeMsr64(MSR_BIOS_DONE, BiosDone & ~0x1); // clear the ENABLE_IA_UNTRUSTED bit (0)
     COMSERIALOUT("Cleared BIOS_DONE\n");
@@ -378,6 +401,13 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
         goto EXIT;
     }
 
+#ifdef _TDXIO_SUPPORT    
+    if (SeamldrData.PSysInfoTable->IoSysInfoTableVer > IO_SYS_INFO_TABLE_MAX_VERSION) {
+        PRINT_HEX_VAL("IO_SYS_INFO_TABLE version too high, got version \n", SeamldrData.PSysInfoTable->IoSysInfoTableVer);
+        Status = NP_SEAMLDR_PARAMS_STATUS_EBADPLATF;
+        goto EXIT;
+    }
+#endif
 
     COMSERIALOUT("Acquiring SEAMRR lock\n");
 
@@ -390,7 +420,7 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
         goto EXIT;
     }
 
-	// If the compare succeeds, then the SeamldrMutexStatus moves to LOAD_IN_PROGRESS and set a flag - SET_LOAD_IN_PROGRESS to 1 - 
+	// If the compare succeeds, then the SeamldrMutexStatus moves to LOAD_IN_PROGRESS and set a flag SET_LOAD_IN_PROGRESS to 1  
 	// to indicate that this instance of the SEAMLDR moved the SeamldrMutexStatus field to LOAD_IN_PROGRESS.
 	MutexAcquired = TRUE;
 
@@ -407,13 +437,8 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
         goto EXIT;
     }
     
-    if (!RdSeed16(&Rrrr)) {
-        Status = NP_SEAMLDR_PARAMS_STATUS_EUNSPECERR;
-        COMSERIALOUT("RDSEED failed\n");
-        goto EXIT;
-    }
-
-    SeamldrData.AslrRand = (((UINT64)(Rrrr & ASLR_MASK)) << 32);
+    SeamldrData.AslrRand = (((UINT64)(pCom64->PseamldrAslrVal & ASLR_MASK)) << 32);
+    
     PRINT_HEX_VAL("AslrRand ", SeamldrData.AslrRand);
 #if (defined(BULLSEYE_BUILD) && (BULLSEYE_BUILD==1))
     SeamldrData.AslrRand = 0;
@@ -439,7 +464,7 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
     MemZeroWithMovdir64B((UINT8*)(SeamldrData.SeamrrVa + SeamldrData.SeamrrSize - _2KB), _2KB);
 
     COMSERIALOUT("Load  P-Seamld code\n");
-    SIMICS_BREAKPOINT;
+
 
     // After copying(or as part of copying) into the SEAMRR, measure the copied image using SHA384.
     // Specifically, the measurement must not be done on the module image outside SEAMRR.
@@ -507,7 +532,7 @@ void SeamldrAcm(SEAMLDR_COM64_DATA *pCom64, PT_CTX* PtCtx) {
     SetupVmcs(SeamrrPtCtx.PtBaseAddrPa);
 
     COMSERIALOUT("Record Seam identity\n");
-    SIMICS_BREAKPOINT;
+
     RecordSeamIdentity();
 
 EXIT:
@@ -518,7 +543,6 @@ EXIT:
             SeamldrData.PSysInfoTable->NpSeamldrMutex = NP_SEAMLDR_MUTEX_CLEAR;
         }
 
-
         // SEAM range relocking:
         SeamrrMaskMsr.valid = 1;
         writeMsr64(MSR_IA32_SEAMRR_MASK, SeamrrMaskMsr.raw);
@@ -527,11 +551,7 @@ EXIT:
 #endif
     }
 
-
-    // RESTORE BIOS ID after the last CPUID
-    writeMsr64(MSR_IA32_BIOS_SIGN_ID, OriginalBIOSID);
-
     PRINT_HEX_VAL("Exitingseamldr\nStatus: 0x", Status);
-    SIMICS_BREAKPOINT;
+
 //    DEBUG ((EFI_D_INFO, ("Exit 64 bit code\n"));
 }

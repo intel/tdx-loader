@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef TPM20_H
@@ -26,11 +26,8 @@
 
 typedef unsigned char BYTE;
 typedef unsigned char uint8_t;
-typedef char int8_t;
 typedef unsigned short uint16_t;
-typedef short int16_t;
 typedef unsigned int uint32_t;
-typedef int int32_t;
 
 typedef struct {
   UINT16 size;
@@ -38,7 +35,6 @@ typedef struct {
 } TPM2B;
 
 #define IMPLEMENTATION_PCR 24
-#define PCR_SELECT_MIN     ((PLATFORM_PCR + 7) / 8)
 #define PCR_SELECT_MAX     ((IMPLEMENTATION_PCR + 7) / 8)
 #define MAX_DIGEST_BUFFER  1024
 #define MAX_NV_BUFFER_SIZE 1024
@@ -68,29 +64,7 @@ typedef  UINT16 TPM_ALG_ID;
 
 typedef  UINT32 TPM_CC;
 
-#define TPM_CC_NV_UndefineSpaceSpecial (TPM_CC)(0x0000011f)
-#define TPM_CC_HierarchyControl        (TPM_CC)(0x00000121)
-#define TPM_CC_NV_Write                (TPM_CC)(0x00000137)
-#define TPM_CC_PCR_Event               (TPM_CC)(0x0000013c)
-#define TPM_CC_SequenceComplete        (TPM_CC)(0x0000013e)
-#define TPM_CC_NV_Read                 (TPM_CC)(0x0000014e)
-#define TPM_CC_Startup                 (TPM_CC)(0x00000144)
-#define TPM_CC_Shutdown                (TPM_CC)(0x00000145)
-#define TPM_CC_SequenceUpdate          (TPM_CC)(0x0000015c)
-#define TPM_CC_FlushContext            (TPM_CC)(0x00000165)
-#define TPM_CC_NV_ReadPublic           (TPM_CC)(0x00000169)
-#define TPM_CC_PolicyCommandCode       (TPM_CC)(0x0000016c)
-#define TPM_CC_PolicyLocality          (TPM_CC)(0x0000016f)
-#define TPM_CC_PolicyOR                (TPM_CC)(0x00000171)
-#define TPM_CC_StartAuthSession        (TPM_CC)(0x00000176)
-#define TPM_CC_GetCapability           (TPM_CC)(0x0000017a)
-#define TPM_CC_PCR_Read                (TPM_CC)(0x0000017e)
-#define TPM_CC_PolicyPCR               (TPM_CC)(0x0000017f)
-#define TPM_CC_PCR_Extend              (TPM_CC)(0x00000182)
-#define TPM_CC_EventSequenceComplete   (TPM_CC)(0x00000185)
-#define TPM_CC_HashSequenceStart       (TPM_CC)(0x00000186)
-
-#define TPM20_HASH_COUNT               5
+#define TPM20_HASH_COUNT 5
 
 #define TPM2B_TYPE(name, bytes)         \
   typedef union {           \
@@ -101,53 +75,20 @@ typedef  UINT32 TPM_CC;
     TPM2B b;              \
   } TPM2B_ ## name
 
-typedef UINT32 TPM_ALGORITHM_ID;
-typedef UINT32 TPM_PARAMETER_SIZE;
-typedef UINT16 TPM_KEY_SIZE;
-typedef UINT16 TPM_KEY_BITS;
-
-#define RC_VER1                 (0x100)
-#define TPM_RC_COMMAND_CODE     (RC_VER1 + 0x043)
-#define TPM_RC_NV_UNINITIALIZED (RC_VER1 + 0x04A)
-#define RC_FMT1                 (0x080)
-#define TPM_RC_HANDLE           (RC_FMT1 + 0x00B)
+#define RC_VER1 (0x100)
+#define RC_FMT1 (0x080)
 
 typedef UINT16 TPM_ST;
 
-#define TPM_ST_NO_SESSIONS (0x8001)
-#define TPM_ST_SESSIONS    (0x8002)
-
 typedef UINT16 TPM_SU;
-#define TPM_SU_CLEAR (0x0000)
-#define TPM_SU_STATE (0x0001)
 
 typedef UINT8 TPM_SE;
-#define TPM_SE_HMAC   (0x00)
-#define TPM_SE_POLICY (0x01)
 
 typedef UINT32 TPM_CAP;
-#define TPM_CAP_FIRST           (0x00000000)
-#define TPM_CAP_ALGS            (0x00000000)
-#define TPM_CAP_HANDLES         (0x00000001)
-#define TPM_CAP_COMMANDS        (0x00000002)
-#define TPM_CAP_PCRS            (0x00000005)
-#define TPM_CAP_LAST            (0x00000008)
-#define TPM_CAP_VENDOR_PROPERTY (0x00000100)
-#define TPM_CAP_PROPERTY_STAGE  (0x00000001)
-#define PTT_STAGE_OSBUP         (0x0)
-#define PTT_STAGE_MAIN_MEM      (0x3)
 
 typedef UINT32 TPM_PT;
 typedef UINT32 TPM_PT_PCR;
 typedef UINT32 TPM_HANDLE;
-typedef UINT8 TPM_HT;
-
-#define TPM_RH_OWNER       (0x40000001)
-#define TPM_RH_NULL        (0x40000007)
-#define TPM_RS_PW          (0x40000009)
-
-#define TPM_RH_ENDORSEMENT (0x4000000B)
-#define TPM_RH_PLATFORM    (0x4000000C)
 
 typedef union {
   struct {
@@ -190,11 +131,9 @@ typedef union {
 } TPMA_LOCALITY;
 
 typedef BYTE TPMI_YES_NO;
-#define NO  0
-#define YES 1
+#define NO 0
 
 typedef TPM_HANDLE TPMI_DH_OBJECT;
-typedef TPM_HANDLE TPMI_DH_PERSISTENT;
 typedef TPM_HANDLE TPMI_DH_ENTITY;
 typedef TPM_HANDLE TPMI_DH_PCR;
 typedef TPM_HANDLE TPMI_SH_AUTH_SESSION;

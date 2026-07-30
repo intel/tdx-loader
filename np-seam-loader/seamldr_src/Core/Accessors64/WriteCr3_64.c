@@ -1,5 +1,5 @@
 // Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
+//                                                                                
 // Permission is hereby granted, free of charge, to any person obtaining a copy  
 // of this software and associated documentation files (the "Software"),         
 // to deal in the Software without restriction, including without limitation     
@@ -19,28 +19,21 @@
 // OR OTHER DEALINGS IN THE SOFTWARE.                                            
 //                                                                               
 // SPDX-License-Identifier: MIT
-
+/**
+  Microsoft Visual Studio 7.1 Function Prototypes for I/O Intrinsics.
+**/
 #include "common.h"
-#include "paging.h"
-#include "Header.h"
-#include "msr.h"
-#include "MemoryOps.h"
-#include "common32.h"
 
-UINT32 ChipsetAcmType = MCP_CHIPSET_ACM_TYPE;
-UINT32 TxtErrorRegister = TXT_ERROR_REGISTER;
 
-void ProjectAcmEntryPoint()
+/**
+  Write value to CR3 register.
+
+  @param  Value                Value to write to CR3.
+**/
+void
+WriteCr3(
+  IN UINT64 Value
+  )
 {
-  PT_CTX PtCtx;
-
-  Init64bitComArea();
-
-  (void)EstablishSeamldrPaging(&SeamldrCom64Data, &PtCtx);
-
-  SeamldrCom64Data.PtCtxPtr = (UINT64)(UINTPTR)&PtCtx;
-
-  SeamldrThunk64();
-
-  // No return to here
+  __writecr3(Value);
 }

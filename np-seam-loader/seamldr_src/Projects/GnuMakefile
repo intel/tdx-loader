@@ -135,6 +135,15 @@ OPT_STRING := OD
 OPT_FLAG   := -Od
 endif
 
+#enable or disable tdxio
+
+ifeq ($(tdxio),on)
+TDX_IO_FLAG := -D_TDXIO_SUPPORT=1
+endif
+ifeq ($(tdxio),off)
+TDX_IO_FLAG = 
+endif
+
 # User can pass in a value to be be passed to PE2BIN tool (rev=<value>)
 # Optional
 rev ?=
@@ -227,6 +236,7 @@ CDEFINES += -DMKF_DUAL_SIGNING_EN=$(MKF_DUAL_SIGNING_EN)
 endif
 
 CDEFINES += -DSIMICS_BLD=$(SIMICS_BLD)
+CDEFINES += $(TDX_IO_FLAG)
 
 ifndef MKF_TPR_SUPPORTED
 MKF_TPR_SUPPORTED=0

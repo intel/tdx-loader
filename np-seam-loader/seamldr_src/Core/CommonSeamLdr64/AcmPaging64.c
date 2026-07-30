@@ -1,5 +1,5 @@
 // Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
+//                                                                                
 // Permission is hereby granted, free of charge, to any person obtaining a copy  
 // of this software and associated documentation files (the "Software"),         
 // to deal in the Software without restriction, including without limitation     
@@ -24,6 +24,7 @@
 #include "paging.h"
 #include "Header.h"
 #include "msr.h"
+#include "NpSeamldr.h"
 
 void __ud2(void);
 #pragma intrinsic(__ud2)
@@ -128,6 +129,8 @@ UINT64 MapPhysicalRange(PT_CTX *pctx, UINT64 Addr, UINT64 size, PAGE_ACCESS_TYPE
         }
     }
 
+    PRINT_HEX_VAL_LEVEL(_PRINT_LEVEL_EXTENDED, "Mapped physical ", Addr);
+    PRINT_HEX_VAL_LEVEL(_PRINT_LEVEL_EXTENDED, "To ", VirtualAddr);
     return VirtualAddr;
 }
 
@@ -148,5 +151,6 @@ void RemoveLinearMapping(PT_CTX *pctx, UINT64 LinearAddr, BOOL LargePageMapping)
     Pt->PT[idx].Raw = 0;
 
     __invlpg((void*)LinearAddr);
+//    PRINT_HEX_VAL("Removed mapping of ", LinearAddr);
 }
 

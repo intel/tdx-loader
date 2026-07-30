@@ -54,8 +54,30 @@ SRC_FILES = $(C_SRC_FILES) $(ASM_SRC_FILES)
 HEADER_FILES = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.h))
 
 # Objects
-__C_OBJECTS = $(patsubst %.c, %.o, $(notdir $(C_SRC_FILES)))
-__ASM_OBJECTS = $(patsubst %.S, %.o, $(notdir $(ASM_SRC_FILES)))
+__C_OBJECTS = \
+	crypto_stubs.o \
+	rsa.o \
+	sha384.o \
+	seam_vmcs_setup.o \
+	sprintf.o \
+	tdx_debug.o \
+	serial_port.o \
+	ext_libs_override.o \
+	helpers.o \
+	elf.o \
+	error_reporting.o \
+	seam_memory_map.o \
+	keyhole_manager.o \
+	pseamldr_dispatcher.o \
+	seamldr_seaminfo.o \
+	seamldr_install.o \
+	seamldr_shutdown.o \
+	seamldr_info.o \
+	seamldr_cleanup.o
+
+__ASM_OBJECTS = \
+	pseamldr_exit_point.o \
+	pseamldr_entry_point.o
 
 # Libraries
 CRYPTO_LIB_BUILD_FLAVOR := RELEASE

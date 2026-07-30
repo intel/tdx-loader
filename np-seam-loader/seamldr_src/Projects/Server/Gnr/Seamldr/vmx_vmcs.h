@@ -1,35 +1,35 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 // AUTOMATICALLY GENERATED FILE - DO NOT MODIFY //
 
-#ifndef __RPC_B0_VMX_VMCS_H__
-#define __RPC_B0_VMX_VMCS_H__
+#ifndef __RWC_A0_VMX_VMCS_H__
+#define __RWC_A0_VMX_VMCS_H__
 
 ////////////////////////////////////////////////////////////////////////////
-// Date:            January Thursday 2022-01-06 03:59:09.614386
+// Date:            April Monday 2020-04-13 17:32:13.053426
 // User:            cnladmin
-// Tool Directory:  /nfs/site/proj/cnl/cnl.tools.1/xucodetools/new_model2h/1.4.7/Core
-// Input Files:     rpc_b0_vmx_vmcs.h vmx_vmcs.h
+// Tool Directory:  /nfs/sc/proj/cnl/cnl.tools.1/xucodetools/new_model2h/1.4.7/Core
+// Input Files:     rwc_a0_vmx_vmcs.h vmx_vmcs.h
 ////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////
-// RPC_B0_VMX_VMCS - VMCS OFFSETS
+// RWC_A0_VMX_VMCS - VMCS OFFSETS
 ////////////////////////////////////////////////////////////////////////////
 
 #define VMX_VMCS_REVISION_ID_OFFSET                              0x0000 //4
@@ -304,40 +304,11 @@
 #define VMX_RSVD_64_BIT_CONTROL_5_FULL_OFFSET                    0x04a0 //8
 #define VMX_RSVD_64_BIT_CONTROL_5_HIGH_OFFSET                    0x4a4  //4
 #define VMX_RESERVED_3_OFFSET                                    0x04a8 //88
-#define PPPE_GUEST_RAX_OFFSET                                    0x0500 //8
-#define PPPE_GUEST_RCX_OFFSET                                    0x0508 //8
-#define PPPE_GUEST_RDX_OFFSET                                    0x0510 //8
-#define PPPE_GUEST_RBX_OFFSET                                    0x0518 //8
-#define PPPE_GUEST_RSP_OFFSET                                    0x0520 //8
-#define PPPE_GUEST_RBP_OFFSET                                    0x0528 //8
-#define PPPE_GUEST_RSI_OFFSET                                    0x0530 //8
-#define PPPE_GUEST_RDI_OFFSET                                    0x0538 //8
-#define PPPE_GUEST_R8_OFFSET                                     0x0540 //8
-#define PPPE_GUEST_R9_OFFSET                                     0x0548 //8
-#define PPPE_GUEST_R10_OFFSET                                    0x0550 //8
-#define PPPE_GUEST_R11_OFFSET                                    0x0558 //8
-#define PPPE_GUEST_R12_OFFSET                                    0x0560 //8
-#define PPPE_GUEST_R13_OFFSET                                    0x0568 //8
-#define PPPE_GUEST_R14_OFFSET                                    0x0570 //8
-#define PPPE_GUEST_R15_OFFSET                                    0x0578 //8
-#define PPPE_VMEXIT_INJECTION_OFFSET                             0x0580 //8
-#define PPPE_FROM_RIP_OFFSET                                     0x0588 //8
-#define PPPE_PAGE_FAULT_ADDRESS_OFFSET                           0x0590 //8
-#define PPPE_VM_ENTRY_CONTROL_OFFSET                             0x0598 //8
-#define PPPE_VMCS_CHILD_POINTER_OFFSET                           0x05a0 //8
-#define PPPE_UNWIND_OFFSET                                       0x05a8 //8
-#define PPPE_GUEST_DOORBELL_INHIBITS_OFFSET                      0x05b0 //8
-#define PPPE_GUEST_MISC_UARCH_STATE_OFFSET                       0x05b8 //8
-#define PPPE_GUEST_INSTRUCTION_OPCODE_OFFSET                     0x05c0 //8
-#define PPPE_GUEST_INSTRUCTION_DISPLACEMENT_OFFSET               0x05c8 //8
-#define PPPE_GUEST_INSTRUCTION_IMMEDIATE_OFFSET                  0x05d0 //8
-#define PPPE_GUEST_EXCEPTION_INHIBITS_OFFSET                     0x05d8 //8
-#define PPPE_GUEST_SSP_OFFSET                                    0x05e0 //8
-#define PPPE_PRE_VM_EXIT_VMCS_LEVEL_OFFSET                       0x05e8 //4
+
 #define VMX_RESERVED_4_OFFSET                                    0x05ec //2580
 
 ////////////////////////////////////////////////////////////////////////////
-// RPC_B0_VMX_VMCS - VMCS SIZES
+// RWC_A0_VMX_VMCS - VMCS SIZES
 ////////////////////////////////////////////////////////////////////////////
 
 #define VMX_VMCS_REVISION_ID_SIZE                              4
@@ -599,40 +570,10 @@
 #define VMX_RSVD_64_BIT_CONTROL_5_FULL_SIZE                    8
 #define VMX_RSVD_64_BIT_CONTROL_5_HIGH_SIZE                    4
 #define VMX_RESERVED_3_SIZE                                    88
-#define PPPE_GUEST_RAX_SIZE                                    8
-#define PPPE_GUEST_RCX_SIZE                                    8
-#define PPPE_GUEST_RDX_SIZE                                    8
-#define PPPE_GUEST_RBX_SIZE                                    8
-#define PPPE_GUEST_RSP_SIZE                                    8
-#define PPPE_GUEST_RBP_SIZE                                    8
-#define PPPE_GUEST_RSI_SIZE                                    8
-#define PPPE_GUEST_RDI_SIZE                                    8
-#define PPPE_GUEST_R8_SIZE                                     8
-#define PPPE_GUEST_R9_SIZE                                     8
-#define PPPE_GUEST_R10_SIZE                                    8
-#define PPPE_GUEST_R11_SIZE                                    8
-#define PPPE_GUEST_R12_SIZE                                    8
-#define PPPE_GUEST_R13_SIZE                                    8
-#define PPPE_GUEST_R14_SIZE                                    8
-#define PPPE_GUEST_R15_SIZE                                    8
-#define PPPE_VMEXIT_INJECTION_SIZE                             8
-#define PPPE_FROM_RIP_SIZE                                     8
-#define PPPE_PAGE_FAULT_ADDRESS_SIZE                           8
-#define PPPE_VM_ENTRY_CONTROL_SIZE                             8
-#define PPPE_VMCS_CHILD_POINTER_SIZE                           8
-#define PPPE_UNWIND_SIZE                                       8
-#define PPPE_GUEST_DOORBELL_INHIBITS_SIZE                      8
-#define PPPE_GUEST_MISC_UARCH_STATE_SIZE                       8
-#define PPPE_GUEST_INSTRUCTION_OPCODE_SIZE                     8
-#define PPPE_GUEST_INSTRUCTION_DISPLACEMENT_SIZE               8
-#define PPPE_GUEST_INSTRUCTION_IMMEDIATE_SIZE                  8
-#define PPPE_GUEST_EXCEPTION_INHIBITS_SIZE                     8
-#define PPPE_GUEST_SSP_SIZE                                    8
-#define PPPE_PRE_VM_EXIT_VMCS_LEVEL_SIZE                       4
 #define VMX_RESERVED_4_SIZE                                    2580
 
 ////////////////////////////////////////////////////////////////////////////
-// RPC_B0_VMX_VMCS - VMCS ENCODINGS
+// RWC_A0_VMX_VMCS - VMCS ENCODINGS
 ////////////////////////////////////////////////////////////////////////////
 
 #define VMX_GUEST_ES_SELECTOR_ENCODE                             0x0800
@@ -882,7 +823,7 @@
 #define VMX_RSVD_64_BIT_CONTROL_5_HIGH_ENCODE                    0x204d
 
 ////////////////////////////////////////////////////////////////////////////
-// RPC_B0_VMX_VMCS - VMCS FORMATS
+// RWC_A0_VMX_VMCS - VMCS FORMATS
 ////////////////////////////////////////////////////////////////////////////
 
 #define VMX_VMCS_REVISION_ID_FORMAT                              2
@@ -1140,55 +1081,14 @@
 #define VMX_RSVD_64_BIT_CONTROL_4_HIGH_FORMAT                    2
 #define VMX_RSVD_64_BIT_CONTROL_5_FULL_FORMAT                    1
 #define VMX_RSVD_64_BIT_CONTROL_5_HIGH_FORMAT                    2
-#define PPPE_GUEST_RAX_FORMAT                                    1
-#define PPPE_GUEST_RCX_FORMAT                                    1
-#define PPPE_GUEST_RDX_FORMAT                                    1
-#define PPPE_GUEST_RBX_FORMAT                                    1
-#define PPPE_GUEST_RSP_FORMAT                                    1
-#define PPPE_GUEST_RBP_FORMAT                                    1
-#define PPPE_GUEST_RSI_FORMAT                                    1
-#define PPPE_GUEST_RDI_FORMAT                                    1
-#define PPPE_GUEST_R8_FORMAT                                     1
-#define PPPE_GUEST_R9_FORMAT                                     1
-#define PPPE_GUEST_R10_FORMAT                                    1
-#define PPPE_GUEST_R11_FORMAT                                    1
-#define PPPE_GUEST_R12_FORMAT                                    1
-#define PPPE_GUEST_R13_FORMAT                                    1
-#define PPPE_GUEST_R14_FORMAT                                    1
-#define PPPE_GUEST_R15_FORMAT                                    1
-#define PPPE_VMEXIT_INJECTION_FORMAT                             1
-#define PPPE_FROM_RIP_FORMAT                                     1
-#define PPPE_PAGE_FAULT_ADDRESS_FORMAT                           1
-#define PPPE_VM_ENTRY_CONTROL_FORMAT                             1
-#define PPPE_VMCS_CHILD_POINTER_FORMAT                           1
-#define PPPE_UNWIND_FORMAT                                       1
-#define PPPE_GUEST_DOORBELL_INHIBITS_FORMAT                      1
-#define PPPE_GUEST_MISC_UARCH_STATE_FORMAT                       1
-#define PPPE_GUEST_INSTRUCTION_OPCODE_FORMAT                     1
-#define PPPE_GUEST_INSTRUCTION_DISPLACEMENT_FORMAT               1
-#define PPPE_GUEST_INSTRUCTION_IMMEDIATE_FORMAT                  1
-#define PPPE_GUEST_EXCEPTION_INHIBITS_FORMAT                     1
-#define PPPE_GUEST_SSP_FORMAT                                    1
-#define PPPE_PRE_VM_EXIT_VMCS_LEVEL_FORMAT                       2
-
 ////////////////////////////////////////////////////////////////////////////
-// RPC_B0_VMX_VMCS - VtVMCS_t and XuVMCS_t VMCS structures
+// RWC_A0_VMX_VMCS - VtVMCS_t and XuVMCS_t VMCS structures
 ////////////////////////////////////////////////////////////////////////////
 
 #ifndef ONLY_DEFINES // Turn off any non-#define code //
-
-typedef struct {
-  uint8_t _[1024];
-} VtVMCS_t;
-typedef struct {
-  union {
-    VtVMCS_t vt;
-    uint8_t  _x[2048];
-  };
-} XuVMCS_t;
 
 #endif // ONLY_DEFINES //
 
 // AUTOMATICALLY GENERATED FILE - DO NOT MODIFY //
 
-#endif // __RPC_B0_VMX_VMCS_H__ //
+#endif // __RWC_A0_VMX_VMCS_H__ //

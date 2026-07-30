@@ -20,9 +20,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-#ifndef UART_H
-#define UART_H
+#include <common.h>
+#include <text_alignment_padding.h>
 
-#define COM1_BASE 0x3f8
+#pragma optimize( "", off )
 
-#endif UART_H
+#pragma data_seg("SDATA32")
+#pragma bss_seg("SDATA32")
+#pragma const_seg("SDATA32")
+
+UINT8 stackStart[STACK_SIZE + text_alignment_padding]; // Create stack space

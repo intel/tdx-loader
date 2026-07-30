@@ -42,7 +42,7 @@ pseamldr_entry_point:
     movq %rcx,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+8
     movq %rdx,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+16
     movq %rbx,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+24
-    movq %rsp,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+32 // not actually needed
+    // RSP is saved by uCode
     movq %rbp,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+40
     movq %rsi,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+48
     movq %rdi,  %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+56

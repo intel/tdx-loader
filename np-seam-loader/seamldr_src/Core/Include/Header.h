@@ -1,31 +1,29 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef HEADER_H
 #define HEADER_H
 #pragma pack (1)
 #include <basic_defs.h>
-
-#define REVISION_ID_MASK 1
 
 typedef struct _ACM_CHIPSET_ID {
   UINT32 dFlags;
@@ -58,7 +56,11 @@ typedef struct {
   UINT16 AlgIdCount;
   UINT16 AlgIdArray[];
 } ACM_TPM_CAPABILITIES_TBL;
-
+typedef struct {
+  UINT8  Reserved2Part1[28];
+  UINT32 AcmGroup;
+  UINT8  Reserved2Part2[32];
+} RESERVED2_STRUCT;
 typedef struct P_SEAMLDR_CONSTS {
   UINT64 CDataStackSize;
   UINT64 CCodeRgnSize;
@@ -73,20 +75,12 @@ typedef struct {
   UINT8  coreVersion[];
 } ACM_GEN_CORE_VER_INFO_TBL;
 
-#define CPU_MODULE_TYPE       1
 #define CS_MODULE_TYPE        2
 
 #define CLIENT_MODULE_SUBTYPE 0
-#define LTSX_MODULE_SUBTYPE   1
 
-#define DUAL_SIGNED_EN        1
-
-//
-// Header length + header version
-//
-#define HEADER_0_INIT_1 {161, 0}
-#define HEADER_3_INIT_1 {224, 0x30000}
-#define HEADER_4_INIT_1 {928, 0x40000}
+#define HEADER_4_INIT_1       {928, 0x40000}
+#define HEADER_5_INIT_1       {928, 0x50004}
 
 //
 // Module vendor + Date + Module size (in DW)
@@ -99,12 +93,18 @@ typedef struct {
 #define HEADER_INIT_3 {00, 00}
 
 //
-// Reserved2 + KeySize + ScratchSize + Rsa3072PubKey + Rsa3072Sig +
+// Reserved2 + KeySize + ScratchSize + Rsa3072PubKey + Rsa3072Sig + Reserved3
 // scratch
 //
-#define HEADER_0_INIT_4 {{0}, 64, 143}
-#define HEADER_3_INIT_4 {{0}, 96, 208, {0}, {0}, {0}}
-#define HEADER_4_INIT_4 {{0}, 96, 896, {0}, {0}, {0}, {0}, {0}, {0}}
+
+#ifndef ACM_GROUP
+#define ACM_GROUP             0
+#endif
+#define HEADER_4_KEY_SIZE     96
+#define HEADER_4_SCRATCH_SIZE 896
+
+#define HEADER_4_INIT_4       {.Reserved2Struct = {{0}, ACM_GROUP, {0}}, HEADER_4_KEY_SIZE, \
+                               HEADER_4_SCRATCH_SIZE, {0}, {0}, {0}, {0}, {0}, {0}}
 
 #ifndef MF_CS_PRESENT_2
 #define MF_CS_PRESENT_2 0
@@ -170,25 +170,18 @@ typedef struct {
 #define MF_ALG_SM2_PRESENT 0
 #endif
 
-#define CHIPSET_ID_COUNT                    (MF_CS_PRESENT_1 + MF_CS_PRESENT_2 + \
-                                             MF_CS_PRESENT_3 + MF_CS_PRESENT_4)                         // Number of entries in array of ProcessorIDs
-#define PROCESSOR_ID_COUNT                  (MF_PROC_PRESENT_1 + MF_PROC_PRESENT_2 + \
-                                             MF_PROC_PRESENT_3 + MF_PROC_PRESENT_4 + MF_PROC_PRESENT_5) // Number of entries in array of ProcessorIDs
+#define CHIPSET_ID_COUNT   (MF_CS_PRESENT_1 + MF_CS_PRESENT_2 + \
+                            MF_CS_PRESENT_3 + MF_CS_PRESENT_4)                         // Number of entries in array of ProcessorIDs
+#define PROCESSOR_ID_COUNT (MF_PROC_PRESENT_1 + MF_PROC_PRESENT_2 + \
+                            MF_PROC_PRESENT_3 + MF_PROC_PRESENT_4 + MF_PROC_PRESENT_5) // Number of entries in array of ProcessorIDs
 
-#define ALG_ID_COUNT                        (MF_ALG_SHA1_PRESENT + MF_ALG_SHA256_PRESENT + \
-                                             MF_ALG_SHA384_PRESENT + MF_ALG_SHA512_PRESENT + \
-                                             MF_ALG_SM3_256_PRESENT + MF_ALG_RSASSA_PRESENT + \
-                                             MF_ALG_ECDSA_PRESENT + MF_ALG_SM2_PRESENT + MF_ALG_RSAPSS_PRESENT)
+#define ALG_ID_COUNT       (MF_ALG_SHA1_PRESENT + MF_ALG_SHA256_PRESENT + \
+                            MF_ALG_SHA384_PRESENT + MF_ALG_SHA512_PRESENT + \
+                            MF_ALG_SM3_256_PRESENT + MF_ALG_RSASSA_PRESENT + \
+                            MF_ALG_ECDSA_PRESENT + MF_ALG_SM2_PRESENT + MF_ALG_RSAPSS_PRESENT)
 
-#define ACM_TPM_CAP_EXTEND_POLICY_ALG_AGILE BIT0
-#define ACM_TPM_CAP_EXTEND_POLICY_SW_EMBED  BIT1
-#define ACM_TPM_CAP_DTPM_FAM12_SUPPORT      BIT2
-#define ACM_TPM_CAP_DTPM_FAM20_SUPPORT      BIT3
-#define ACM_TPM_CAP_PTT_FAM20_SUPPORT       BIT5
-#define ACM_TPM_CAP_TCG_IDX_SET             BIT6
-
-#define ACM_GEN_VERSION                     0x2
-#define ACM_CORE_VERSION                    {1, 1, 0}
+#define ACM_GEN_VERSION    0x2
+#define ACM_CORE_VERSION   {1, 1, 0}
 
 typedef struct {
   UINT16 ModuleType;
@@ -285,7 +278,11 @@ typedef struct {
   UINT32 SegSel;
   UINT32 EntryPoint;
   struct {
-    UINT8  Reserved2[64];
+    union {
+      RESERVED2_STRUCT Reserved2Struct;
+      UINT8            Reserved2[64];
+    };
+
     UINT32 KeySize;     // 96 DWORDS in the Key
     UINT32 ScratchSize; // 208 DWORDS = 832 BYTES Sractch Size
     UINT8  RSA3072PubKey[384];
@@ -298,10 +295,8 @@ typedef struct {
   };
 } ACM_HEADER_4;
 
+#define ACM_HEADER_V5 0x50004
 #define ACM_HEADER_V4 0x40000
-#define ACM_HEADER_V3 0x30000
-#define ACM_HEADER_V0 0x0
-
 typedef struct {
   UINT16 ModuleType;
   UINT16 ModuleSubType;
@@ -331,20 +326,18 @@ typedef struct {
 } ACM_HEADER_DATA;
 
 #ifndef MF_HEADER_VERSION
-  #define MF_HEADER_VERSION ACM_HEADER_V_3
+  #define MF_HEADER_VERSION ACM_HEADER_V_4
 #endif
 
-#if MF_HEADER_VERSION == ACM_HEADER_V_0
-  #define ACM_HEADER    ACM_HEADER_0
-  #define HEADER_INIT_1 HEADER_0_INIT_1
-  #define HEADER_INIT_4 HEADER_0_INIT_4
-#elif MF_HEADER_VERSION == ACM_HEADER_V_3
-  #define ACM_HEADER    ACM_HEADER_3
-  #define HEADER_INIT_1 HEADER_3_INIT_1
-  #define HEADER_INIT_4 HEADER_3_INIT_4
-#else
+#if MF_HEADER_VERSION == ACM_HEADER_V_4
   #define ACM_HEADER    ACM_HEADER_4
   #define HEADER_INIT_1 HEADER_4_INIT_1
+  #define HEADER_INIT_4 HEADER_4_INIT_4
+#else
+//
+// Header 5 has same structure as Header 4
+  #define ACM_HEADER    ACM_HEADER_4
+  #define HEADER_INIT_1 HEADER_5_INIT_1
   #define HEADER_INIT_4 HEADER_4_INIT_4
 #endif
 
@@ -379,8 +372,6 @@ typedef struct _IDT32GATE {
   UINT16 Off31_16;
 } IDT32GATE;
 
-#define IDT32GATE_INIT_1 0x8E00
-
 typedef union {
   struct _GDT32DESCRIPTOR {
     UINT16 Limit15_0;
@@ -399,10 +390,8 @@ typedef struct _GDT {
   GDT32DESCRIPTOR AcmCode64Descriptor;
 } GDT;
 
-#define ACM_CODE_SELECTOR   8
-#define ACM_DATA_SELECTOR   16
-#define ACM_CODE64_SELECTOR 24
-#define GDT_SIZE            32
+#define ACM_CODE_SELECTOR 8
+#define GDT_SIZE          32
 
 extern UINT32 AcmBase;
 extern UINT32 HeaderOffset;
@@ -435,7 +424,6 @@ extern UINT32 PSeamldrSizeAsm;
 extern UINT8 PSeamldrAsm[];
 extern ACM_HEADER_DATA HeaderData;
 #ifdef MKF_DUAL_SIGNING_EN
-UINT32 PlatformGetAcmHeaderOffset();
 #endif
 
 #pragma pack ()

@@ -1,5 +1,5 @@
 ; Copyright (C) 2023 Intel Corporation                                          
-;                                                                               
+;                                                                                
 ; Permission is hereby granted, free of charge, to any person obtaining a copy  
 ; of this software and associated documentation files (the "Software"),         
 ; to deal in the Software without restriction, including without limitation     
@@ -19,6 +19,7 @@
 ; OR OTHER DEALINGS IN THE SOFTWARE.                                            
 ;                                                                               
 ; SPDX-License-Identifier: MIT
+
 
 %ifndef SEAMLDRCOM_EQU
 %define SEAMLDRCOM_EQU 0
@@ -50,6 +51,7 @@ struc SEAMLDR_COM64_DATA
 .PseamldrOffset:              resq   1
 .PseamldrConstsOffset:     	  resq   1
 .NewGdtr:     				  resb   10
+.AcmAslrMask                  resq   1
 endstruc
 
 

@@ -1,0 +1,95 @@
+# escape=`
+# ONLINE variant: VS bootstrapper downloads packages over the network during
+# `docker build`. Requires the container to have outbound internet access to
+# aka.ms / download.visualstudio.microsoft.com. Simpler to maintain than the
+# offline variant, but sensitive to network reliability during the build.
+FROM mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2022 AS base
+
+# IF YOU ARE BEHIND A CORPORATE PROXY, build with (replace with your own proxy
+# host/port - these are Docker's predefined proxy build-args, so no other Dockerfile
+# changes are needed; they're auto-injected as env vars into every RUN step below):
+#   docker build `
+#       --build-arg HTTP_PROXY=http://your-proxy:port `
+#       --build-arg HTTPS_PROXY=http://your-proxy:port `
+#       --build-arg NO_PROXY="localhost,127.0.0.1" `
+#       -f Dockerfile.online.public -t <tag> .
+# PowerShell-based tools (Invoke-WebRequest, choco, pip, git) read HTTP_PROXY/
+# HTTPS_PROXY automatically. Native Win32 installers (e.g. vs_professional.exe) use
+# WinHTTP/WinINET instead of env vars, so the RUN step below additionally sets the
+# system WinHTTP proxy from those same build-args - safe/no-op if you don't pass any.
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# Install chocolatey, python3, git and make
+ADD https://community.chocolatey.org/api/v2/package/chocolatey/2.3.0 chocolatey.2.3.0.nupkg
+ADD https://community.chocolatey.org/install.ps1 install.ps1
+RUN powershell -command `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    .\Install.ps1 -ChocolateyDownloadUrl chocolatey.2.3.0.nupkg; `
+    Remove-Item chocolatey.2.3.0.nupkg; `
+    Remove-Item install.ps1 `
+    && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin" `
+    && choco install python3 -y `
+    && py -m pip install --upgrade pip `
+    && py -m pip uninstall --yes setuptools `
+    && py -m pip install "setuptools>=65.5.1" `
+    && choco install git -y `
+    && choco install make -y
+
+# Restore the default Windows shell for correct batch processing.
+SHELL ["powershell", "-NoProfile", "-Command"]
+
+# Native Win32 apps (e.g. vs_professional.exe) use WinHTTP/WinINET, not HTTP_PROXY env
+# vars - set the system-wide WinHTTP proxy from the build-args above so they can reach
+# Microsoft's download servers too. Safe no-op if HTTP_PROXY/HTTPS_PROXY weren't passed.
+RUN if ($env:HTTP_PROXY -or $env:HTTPS_PROXY) { `
+        $proxyServer = "http=$($env:HTTP_PROXY);https=$($env:HTTPS_PROXY)"; `
+        $bypass = if ($env:NO_PROXY) { $env:NO_PROXY -replace ',', ';' } else { 'localhost;127.0.0.1' }; `
+        Write-Host "Setting WinHTTP proxy: $proxyServer (bypass: $bypass)"; `
+        netsh winhttp set proxy proxy-server=$proxyServer bypass-list=$bypass `
+    } else { `
+        Write-Host 'No proxy build-args supplied - skipping WinHTTP proxy configuration.' `
+    }
+
+# Install Visual Studio 2019 + 2015 build tools - bootstrapper downloads all packages
+# over the network at build time (requires reachable Microsoft download servers).
+ADD https://aka.ms/vs/16/release/vs_professional.exe C:\vs_professional.exe
+RUN $ErrorActionPreference='Stop'; `
+    Write-Host 'Verifying network connectivity to Microsoft download servers...'; `
+    try { Invoke-WebRequest -Uri 'https://aka.ms/vs/16/release/channel' -UseBasicParsing -TimeoutSec 30 | Out-Null; Write-Host 'Network check OK' } `
+    catch { Write-Host ('WARNING: network check failed - ' + $_.Exception.Message) }; `
+    `
+    $installer='C:\vs_professional.exe'; `
+    $vsLog='C:\vs_install.log'; `
+    $args=@( `
+        '--quiet','--wait','--norestart','--nocache', `
+        '--log', $vsLog, `
+        '--add','Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools', `
+        '--add','Microsoft.VisualStudio.Workload.VCTools', `
+        '--add','Microsoft.VisualStudio.Workload.MSBuildTools', `
+        '--add','Microsoft.VisualStudio.Component.VC.Tools.x86.x64', `
+        '--add','Microsoft.VisualStudio.Component.Windows10SDK.18362', `
+        '--add','Microsoft.VisualStudio.Workload.AzureBuildTools', `
+        '--add','Microsoft.VisualStudio.Workload.NativeDesktop', `
+        '--add','Microsoft.VisualStudio.Component.VC.140', `
+        '--remove','Microsoft.VisualStudio.Component.Windows10SDK.10240', `
+        '--remove','Microsoft.VisualStudio.Component.Windows10SDK.10586', `
+        '--remove','Microsoft.VisualStudio.Component.Windows10SDK.14393', `
+        '--remove','Microsoft.VisualStudio.Component.Windows81SDK' `
+    ); `
+    $proc = Start-Process -FilePath $installer -ArgumentList $args -Wait -PassThru; `
+    $rc = $proc.ExitCode; `
+    if ($rc -ne 0 -and $rc -ne 3010) { `
+        Write-Host ('ERROR: VS installer failed with exit code ' + $rc); `
+        if (Test-Path $vsLog) { Write-Host '===== vs_install.log ====='; Get-Content $vsLog } else { Write-Host 'No vs_install.log found (failure happened before bootstrapper could write it - likely network issue)' }; `
+        Write-Host '===== dd_*.log files in TEMP ====='; `
+        $ddLogs = Get-ChildItem -Path (Join-Path $env:TEMP 'dd_*.log') -ErrorAction SilentlyContinue; `
+        if ($ddLogs) { foreach ($log in $ddLogs) { Write-Host ('----- ' + $log.FullName + ' -----'); Get-Content $log.FullName -ErrorAction SilentlyContinue } } `
+        else { Write-Host ('No dd_*.log found in ' + $env:TEMP) }; `
+        exit $rc `
+    }; `
+    if (-not (Test-Path 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvars64.bat')) { `
+        throw 'vcvars64.bat not found - VS install did not complete successfully' `
+    }; `
+    Remove-Item $installer -Force -ErrorAction SilentlyContinue

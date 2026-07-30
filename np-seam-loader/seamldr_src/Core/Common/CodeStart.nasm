@@ -1,5 +1,5 @@
 ; Copyright (C) 2023 Intel Corporation                                          
-;                                                                               
+;                                                                                
 ; Permission is hereby granted, free of charge, to any person obtaining a copy  
 ; of this software and associated documentation files (the "Software"),         
 ; to deal in the Software without restriction, including without limitation     
@@ -25,6 +25,10 @@ CPU P4
 ;---------------------------------------------------------------------------
 %include "AcmCom_NASM.inc"
 
+;%define _PORT80_TRACE_
+%define MF_ATOM_SUPPORT
+%define MSR_CACHE_FLUSH 0x10b
+%define CACHE_FLUSH_CMD BIT0
 
 section EDATA32 data write PUBLIC
 
@@ -263,7 +267,7 @@ FixupLoop:
         sub     ebx, MCP_SHADOW_STACK_GAP  ; setting up shadow stack buffer
         mov     DWORD [shadow_stack_vesp], ebx
 
-        STACK_TEST_FILL_IN
+        ;STACK_TEST_FILL_IN
 
 
         mov     [AcmBase], ebp            ; save Acm.base
@@ -298,6 +302,18 @@ FixupLoop:
         ; retry a long time, don't write to io ports
         RETRIES          EQU     080000000h
         
+        mov     ecx, MSR_IA32_BIOS_SIGN_ID
+        rdmsr   
+        push    eax
+        push    edx
+        mov     eax, 1
+        xor     ecx, ecx
+        cpuid   
+        
+        and     eax, CPUID_FM_MASK
+        cmp     eax, CPUID_CWF_FMS
+        je      OPENED_PRIVATE_SPACE      
+        
         mov     ecx, RETRIES
         mov     edi, LT_PRV_BASE + TXT.LT_STS
         
@@ -310,6 +326,11 @@ FixupLoop:
         jnz OPENED_PRIVATE_SPACE
         ud2
         OPENED_PRIVATE_SPACE:
+        
+        pop    edx
+        pop    eax
+        mov    ecx, MSR_IA32_BIOS_SIGN_ID
+        wrmsr
         
 ; HSW Sighting #3865022 End 
    

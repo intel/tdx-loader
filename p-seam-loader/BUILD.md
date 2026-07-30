@@ -77,7 +77,7 @@ The date and the build num can be extracted by calling seamldr.info (SEAMCALL le
 1) In order to reproduce the exact binary, it is required to include the origin date, and the build number:
 
 ```bash
-make RELEASE=1 PSEAMLDR_BUILD_DATE=20240130 PSEAMLDR_BUILD_NUM=212
+make RELEASE=1 PSEAMLDR_BUILD_DATE=20251106 PSEAMLDR_BUILD_NUM=316 PSEAMLDR_MAJOR_VER=2 PSEAMLDR_MINOR_VER=0 PSEAMLDR_UPDATE_VER=1
 ```
 
 Build output files (pseamldr.so and pseamldr.so.consts) for NP-SEAM-Loader build will be produced in ./bin/release folder.

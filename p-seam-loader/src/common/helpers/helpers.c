@@ -88,10 +88,13 @@ void basic_memset(uint64_t dst, uint64_t dst_bytes, uint8_t val, uint64_t nbytes
 {
     pseamldr_sanity_check (dst_bytes >= nbytes, SCEC_HELPERS_SOURCE, 2);
 
-   _ASM_VOLATILE_ ("rep; stosb;"
-                    :
+    volatile uint64_t junk, junk_c;
+
+   _ASM_VOLATILE_ ("cld\n"
+                    "rep; stosb;"
+                    :"=D"(junk), "=c"(junk_c) // Marking that RCX and RDI are changing
                     :"c"(nbytes), "a"(val), "D"(dst)
-                    :"memory");
+                    :"memory", "cc");
 }
 
 void basic_memset_to_zero(void * dst, uint64_t nbytes)

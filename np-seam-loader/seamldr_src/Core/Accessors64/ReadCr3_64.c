@@ -1,5 +1,5 @@
 // Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
+//                                                                                
 // Permission is hereby granted, free of charge, to any person obtaining a copy  
 // of this software and associated documentation files (the "Software"),         
 // to deal in the Software without restriction, including without limitation     
@@ -19,14 +19,23 @@
 // OR OTHER DEALINGS IN THE SOFTWARE.                                            
 //                                                                               
 // SPDX-License-Identifier: MIT
+/**
+  Microsoft Visual Studio 7.1 Function Prototypes for I/O Intrinsics.
+**/
+#include "common.h"
 
-#include <common.h>
-#include <text_alignment_padding.h>
+unsigned __int64 __readcr3(void);
+#pragma intrinsic(__readcr3)
 
-#pragma optimize( "", off )
+/**
+  Read value from CR3 register.
 
-#pragma data_seg("SDATA32")
-#pragma bss_seg("SDATA32")
-#pragma const_seg("SDATA32")
-
-UINT8 stackStart[STACK_SIZE + text_alignment_padding]; // Create stack space
+  @return Value read from CR3.
+**/
+UINT64
+ReadCr3(
+  void
+  )
+{
+  return __readcr3();
+}

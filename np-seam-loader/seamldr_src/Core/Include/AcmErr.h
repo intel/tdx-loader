@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef ACMERR_H_
@@ -31,7 +31,6 @@
 
 #define CLASS_ACM_PROGRESS 0x00
 
-#define CLASS_ACM_ENTRY    0x1
 enum ENUM_ACM_ENTRY {
   ERR_LAUNCH      = 0x1,                  //Error in ACM entry conditions
   ERR_NEM_ENABLED = 0x2,                  //No Eviction Mode is enabled
@@ -92,11 +91,6 @@ enum ENUM_ERR_ACM_FATAL {
   ERR_PCH_DWR = 0x1
 };
 
-//-----------------------------------------------------------------------------
-//
-//Common MTRR errors
-//-----------------------------------------------------------------------------
-#define CLASS_MTRR_CHECK 0x2
 enum ENUM_MTRR_CHECK {
   ERR_RULE1 = 0x1, //One of the following errors: variable MTRRs are
                    //disabled fixed MTRRs are enabled default memory type
@@ -114,11 +108,6 @@ enum ENUM_MTRR_CHECK {
                    //handle
 };
 
-//-----------------------------------------------------------------------------
-//
-// Range checking service errors
-//-----------------------------------------------------------------------------
-#define CLASS_RANGE_CHECK 0x3
 enum ENUM_RANGE_CHECK {
   ERR_BASIC_RANGE_CHECK = 0x1,                  //One of ranges in array failed the check:
                                                 //alignment is incorrect top address is
@@ -171,11 +160,6 @@ enum ENUM_ERR_RANGE_NOT_CONTAINED {
   ERR_GT_EXC_SGX  = 0x5,
 };
 
-//-----------------------------------------------------------------------------
-//
-// TPM errors
-//-----------------------------------------------------------------------------
-#define CLASS_TPM_ACCESS 0x4
 enum ENUM_TPM_ACCESS {
   ERR_OK,        // Indicator of successful execution of the function.
   ERR_TPM_ERROR, // TPM returned an error
@@ -332,12 +316,6 @@ enum ENUM_ERR_RESPONSE_TIMEOUT {
                                         //set
 };
 
-//-----------------------------------------------------------------------------
-//
-// Chipset configuration errors.
-//-----------------------------------------------------------------------------
-#define CLASS_CHIPSET_CONFIG_1 0x5
-
 enum ENUM_CHIPSET_CONFIG_1 {
   ERR_TXT_RANGE_ENABLES = 0x1,    //One of parameters (base or size) of
                                   //mandatory TXT ranges is invalid: HEAP
@@ -492,7 +470,6 @@ enum ENUM_ERR_MCHBAR_CONFIG {
   ERR_MCHBAR_CONFIG_OVERLAP = 0x1,
 };
 
-#define CLASS_CHIPSET_CONFIG_2 0x6
 enum ENUM_CHIPSET_CONFIG_2 {
   ERR_DMI_CONFIG       = 0x1,
   ERR_IMR3_BASE_CONFIG = 0x2,
@@ -517,11 +494,6 @@ enum ENUM_ERR_TPR_CONFIG {
   ERR_TPR_CONFIG_RNG_LEN      = 0x3,
 };
 
-//-----------------------------------------------------------------------------
-//
-// Trampoline code errors
-//-----------------------------------------------------------------------------
-#define CLASS_ERR_ACM_EXIT 0x7
 enum ENUM_ERR_ACM_EXIT {
   ERR_RLP_TIMEOUT         = 0x1, //Timeout waking up RLPs
   ERR_NO_RLP_UCODE_UPDATE = 0x2, //Microcode patch is detected not loaded
@@ -634,16 +606,10 @@ enum ENUM_FILL_BOUNDS {
 //
 //*****************************************************************************
 
-#define CLASS_FN_SCLEAN 0x9
 enum ENUM_FN_SCLEAN {
   ERR_MEMSCRUB = 0x1,
 };
 
-//-----------------------------------------------------------------------------
-//
-// Reset establishment function errors
-//-----------------------------------------------------------------------------
-#define CLASS_FN_RESET_EST 0xA
 enum ENUM_FN_RESET_EST {
   ERR_EST_TXT_NOT_LOCKED_DISABLED = 0x1,
 };
@@ -677,7 +643,6 @@ enum ENUM_ALIAS_CHECK {
 // Need to reconcile with CLASS_BTG_STARTUP
 //-----------------------------------------------------------------------------
 
-#define CLASS_STARTUPACM 0xC
 enum ENUM_STARTUPACM {
   ERR_STARTUPACM_FIT_TABLE = 0x1,
   ERR_STARTUPACM_INTERNAL  = 0x2,
@@ -727,11 +692,6 @@ enum ENUM_ERR_STARTUPACM_INFO {
 // Client BIOSAC Error Classes
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-//
-// Function ResetAux errors
-//-----------------------------------------------------------------------------
-#define CLASS_FN_RESET_AUX 0xD
 enum ENUM_FN_RESET_AUX {
   ERR_AUX_TXT_NOT_LOCKED_DISABLED = 0x1,
 };
@@ -750,7 +710,6 @@ enum ENUM_FN_SCHECK {
 // IBB loader errors.
 //-----------------------------------------------------------------------------
 
-#define CLASS_IBBL 0xF
 enum ENUM_IBBL {
   ERR_IBBL_FIT_ACCESS_ERROR = 0x1,
   ERR_IBBL_BPM_ACCESS_ERROR = 0x2,
@@ -1003,8 +962,6 @@ enum ENUM_ERR_IBB {
   ERR_BPM_SE_TOTAL_WB_WP_SEGMENT_COUNT    = 0xb,
 };
 
-// Startup ACM, PFR specific errors
-#define CLASS_PFR 0x12
 enum ENUM_PFR {
   ERR_PFR_UNSUPPORTED = 0x1,
   ERR_CPLD_INTERFACE  = 0x2,
@@ -1021,11 +978,6 @@ enum ENUM_ERR_CPLD_INTERFACE {
   ERR_S3M_ROOT_KEY_HASH         = 0x5,
 };
 
-//-----------------------------------------------------------------------------
-//
-// PCR related errors
-//-----------------------------------------------------------------------------
-#define CLASS_PCR_INTEGRITY_CHECK 0x13
 enum ENUM_PCR_INTEGRITY_CHECK {
   ERR_PCR17_VALUE = 0x1,          //Value in PCR17 does not match expected
                                   //result
@@ -1037,11 +989,6 @@ enum ENUM_PCR_INTEGRITY_CHECK {
   ERR_PCR_NOT_SUPPORTED = 0x4,
   ERR_PCR_BIOS_DIGEST   = 0x5,
 };
-//-----------------------------------------------------------------------------
-//
-// Event log related errors
-//-----------------------------------------------------------------------------
-#define CLASS_EVENT_LOG 0x14
 enum ENUM_EVENT_LOG {
   ERR_LOG_HEADER_GUID    = 0x1, //Error log GUID is wrong
   ERR_LOG_HEADER_VERSION = 0x2, //Unsupported event log version
@@ -1050,12 +997,6 @@ enum ENUM_EVENT_LOG {
                                 //or no room to place event entry
   ERR_LOG_RECORD_VERSION = 0x5, //Unsupported event log record version
 };
-
-//-----------------------------------------------------------------------------
-//
-// Heap content related errors
-//-----------------------------------------------------------------------------
-#define CLASS_HEAP_TABLE_BUILD 0x15
 
 //-----------------------------------------------------------------------------
 //
@@ -1086,7 +1027,6 @@ enum ENUM_SINIT64_MODE {
   ERR_HECIBAR_IN_HI_DRAM  = 0xB, // If Heci1bar address lies above 4GB and below TOUUD.
 };
 
-#define CLASS_SAI_POLICY_CHECK 0x17
 enum ENUM_SAI_POLICY_CHECK {
   ERR_SAI_POLICY_LB_W            = 0x1,
   ERR_SAI_POLICY_LB_MCHECK_W     = 0x2,
@@ -1108,18 +1048,12 @@ enum ENUM_SAI_POLICY_CHECK {
   ERR_SAI_POLICY_DFX_OEM_WAC     = 0x12,
 };
 
-#define CLASS_CXL_CHECK 0x18
 enum ENUM_CXL_CHECK {
   ERR_CXL_RCRBBAR_REG_OVER_4GB        = 0x1,
   ERR_CXL_MEMBAR_REG_OVER_4GB         = 0x2,
   ERR_CXL_CAPABILITIES_HEADER_REG     = 0x3,
   ERR_CXL_SEC_CAPABILITIES_HEADER_REG = 0x4,
 };
-//-----------------------------------------------------------------------------
-//
-// DMA protection - TPR configuration errors
-//-----------------------------------------------------------------------------
-#define CLASS_TPR_CONFIG 0x19
 enum ENUM_TPR_CONFIG {
   ERR_CONFIG_TPR          = 0x1,
   ERR_REQ_TPR             = 0x2,
@@ -1132,25 +1066,14 @@ enum ENUM_TPR_CONFIG {
   ERR_MLE_DMA_CONFIG      = 0x9,
 };
 
-//-----------------------------------------------------------------------------
-//
-// Internal errors
-//-----------------------------------------------------------------------------
-#define CLASS_INTERNAL_ERRORS 0x20
 enum ENUM_INTERNAL_ERRORS {
   ERR_SHADOW_STACK = 0x1,
 };
 
-//-----------------------------------------------------------------------------
-//
-// Memory Reference Code erros.
-//-----------------------------------------------------------------------------
-#define CLASS_MRC_CONFIG 0x21
 enum ENUM_MRC_CONFIG {
   ERR_DDR_TYPE_MISMATCH = 0x1,
 };
 
-#define CLASS_ACPI_CHECK 0x22
 enum ENUM_ACPI_CHECK {
   ERR_RSDP_CHKSM   = 0x1, //RSDP checksum error
   ERR_NO_RSDT      = 0x2, //RSDT not found
@@ -1188,22 +1111,11 @@ enum ENUM_ERR_INVALID_CEDT {
   ERR_CHBS_SECURITY_POLICY = 0xC,
 };
 
-//-----------------------------------------------------------------------------
-//
-// ClearSecrets function errors
-//-----------------------------------------------------------------------------
-#define CLASS_CLEAR_SECRETS 0x23
-
 enum ENUM_CLEAR_SECRETS {
   ERR_CLEAR_SECRETS_MEMORY_LOCKED  = 0x1,
   ERR_CLEAR_SECRETS_BIOS_UNTRUSTED = 0x2,
 };
 
-//-----------------------------------------------------------------------------
-//
-// ACPI errors, DMAR specific.
-//-----------------------------------------------------------------------------
-#define CLASS_DMAR_CHECK 0x24
 enum ENUM_DMAR_CHECK {
   ERR_DMAR_INVALID_TYPE = 0x1,   //Unknown structure type is detected in
                                  //DMAR table
@@ -1260,17 +1172,6 @@ enum ENUM_ERR_SATC {
   ERR_SATC_DEV_SCOPE   = 0x4,
 };
 
-//-----------------------------------------------------------------------------
-//
-// This is obsolete SCHECK function erorr - server specific.
-//
-#define CLASS_SCHECK 0x25
-
-//-----------------------------------------------------------------------------
-//
-// DMA protection - PMR configuration errors
-//-----------------------------------------------------------------------------
-#define CLASS_PMR_CONFIG 0x26
 enum ENUM_PMR_CONFIG {
   ERR_DMA_REMAP   = 0x1, //DMA remapping is turned on
   ERR_PMRL_CONFIG = 0x2, //PMR low configuration error - it is either
@@ -1280,13 +1181,6 @@ enum ENUM_PMR_CONFIG {
                          //enabled but not requested or request differs
                          //from actual programming
 };
-
-//-----------------------------------------------------------------------------
-//
-// BIOS properties errors.
-// Consider recomciling with CLASS_BTG_STARTUP
-//-----------------------------------------------------------------------------
-#define CLASS_BIOS_PROPERTIES 0x27
 
 enum ENUM_BIOS_PROPERTIES {
   ERR_BIOS_PROPERTIES_NO_ENTRY_POINT          = 0x1,
@@ -1302,11 +1196,6 @@ enum ENUM_BIOS_PROPERTIES {
   ERR_BIOS_PROPERTIES_FIT_POLICY_RECORD       = 0xb,
 };
 
-//-----------------------------------------------------------------------------
-//
-// MLE header errors
-//-----------------------------------------------------------------------------
-#define CLASS_MLE_HEADER_CHECK 0x28
 enum ENUM_MLE_HEADER_CHECK {
   ERR_MLE_HEADER_LIN_ADDR = 0x1,
   ERR_MLE_GUID            = 0x2,
@@ -1325,12 +1214,6 @@ enum ENUM_ERR_MLE_CAPABILITIES {
   ERR_BPT_SUPPORT           = 0x2,
 };
 
-//-----------------------------------------------------------------------------
-//
-// LockConfiguration function errors.
-// Need to reconcile with client class CLASS_FN_SCHECK
-//-----------------------------------------------------------------------------
-#define CLASS_LOCK_CONFIG 0x29
 enum ENUM_LOCK_CONFIG {
   ERR_LOCK_CONFIG_STARTUP_FAILED       = 0x1,
   ERR_LOCK_CONFIG_MEMORY_LOCKED        = 0x2,
@@ -1338,11 +1221,6 @@ enum ENUM_LOCK_CONFIG {
   ERR_LOCK_CONFIG_SYSTEM_SETUP         = 0x4,
 };
 
-//-----------------------------------------------------------------------------
-//
-// MLE page table errors
-//-----------------------------------------------------------------------------
-#define CLASS_MLE_PT_CHECK 0x2A
 enum ENUM_MLE_PT_CHECK {
   ERR_MLE_RANGE_CHECK          = 0x1,
   ERR_MLE_PAGE_RULE_FAIL       = 0x2,
@@ -1352,11 +1230,6 @@ enum ENUM_MLE_PT_CHECK {
   ERR_MLE_PT_RLP_ENTRY_POINT   = 0x6,
 };
 
-//-----------------------------------------------------------------------------
-//
-// STM crash codes
-//-----------------------------------------------------------------------------
-#define CLASS_STM_CHECK 0x2B
 enum ENUM_STM_CHECK {
   ERR_STM_RANGE_CHECK = 0x1,        //Error in placement or alignment of
                                     //STM related range
@@ -1384,7 +1257,6 @@ enum ENUM_STM_CHECK {
   ERR_STM_REV_ID = 0xE,             //Unsupported STM version
 };
 
-#define CLASS_EXT2_CHIPSET_CONFIG 0x2C
 enum ENUM_EXT2_CHIPSET_CONFIG {
   ERR_GTT_TOLUD_LOCK        = 0x1,
   ERR_CMP_GTT_TOLUD_CONFIG  = 0x2,
@@ -1418,7 +1290,6 @@ enum ENUM_EXT2_CHIPSET_CONFIG {
 // Extended chipset configuration errors.
 //-----------------------------------------------------------------------------
 
-#define CLASS_EXT_CHIPSET_CONFIG 0x2D
 enum ENUM_EXT_CHIPSET_CONFIG {
   ERR_PRMRR_CONFIG            = 0x1,
   ERR_TXT_NOT_DISABLED_LOCKED = 0x2,
@@ -1468,11 +1339,6 @@ enum ENUM_ERR_SEAMRR_CONFIG {
   ERR_SEAMRR_CONFIG_ALIGN = 0x2,
 };
 
-//-----------------------------------------------------------------------------
-//
-// LCP errors
-//-----------------------------------------------------------------------------
-#define CLASS_LAUNCH_CONTROL_POLICY 0x2E
 enum ENUM_LAUNCH_CONTROL_POLICY {
   ERR_RESERVED         = 0x1,      //Reserved - don't use
   ERR_SINIT_REVOKED    = 0x2,      //SINIT is revoked
@@ -1607,11 +1473,6 @@ enum ENUM_ERR_TPM_NOT_PROVISIONED {
   ERR_PS_INDEX_NOT_DEFINED = 0x0,
 };
 
-//-----------------------------------------------------------------------------
-//
-// Sanity check errors
-//-----------------------------------------------------------------------------
-#define CLASS_SANITY_CHECK 0x2F
 enum ENUM_SANITY_CHECK {
   ERR_MCREG            = 0x1,
   ERR_VTD              = 0x2,
@@ -1621,7 +1482,6 @@ enum ENUM_SANITY_CHECK {
   ERR_FIT_PATCH        = 0x6, //Holly PRT
 };
 
-#define CLASS_HEAP_TABLE_CHECK 0x30
 enum ENUM_HEAP_TABLE_CHECK {
   ERR_SIZE           = 0x1,
   ERR_VERSION        = 0x2,    //Unsupported heap data table version

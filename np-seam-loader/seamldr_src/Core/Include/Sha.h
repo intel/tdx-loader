@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #ifndef __SHA_H__
@@ -36,26 +36,11 @@ struct internal_sha_ctx {
   UINT8 *   tail_msg;
 };
 
-#define CONST_H0 0x67452301
-#define CONST_H1 0xEFCDAB89
-#define CONST_H2 0x98BADCFE
-#define CONST_H3 0x10325476
-#define CONST_H4 0xC3D2E1F0
-
 struct sha1_ctx {
   struct internal_sha_ctx common_ctx;
   UINT32                  vars1[10];
   UINT32                  w1[80];
 };
-
-#define CONST_H00 0x6a09e667
-#define CONST_H01 0xbb67ae85
-#define CONST_H02 0x3c6ef372
-#define CONST_H03 0xa54ff53a
-#define CONST_H04 0x510e527f
-#define CONST_H05 0x9b05688c
-#define CONST_H06 0x1f83d9ab
-#define CONST_H07 0x5be0cd19
 
 struct sha2_ctx {
   struct internal_sha_ctx common_ctx;
@@ -63,26 +48,6 @@ struct sha2_ctx {
   UINT32                  w2[80];
   UINT32                  temps2[2];
 };
-
-// Startup values for SHA384 only
-#define CONST_H00_64_3 0xcbbb9d5dc1059ed8
-#define CONST_H01_64_3 0x629a292a367cd507
-#define CONST_H02_64_3 0x9159015a3070dd17
-#define CONST_H03_64_3 0x152fecd8f70e5939
-#define CONST_H04_64_3 0x67332667ffc00b31
-#define CONST_H05_64_3 0x8eb44a8768581511
-#define CONST_H06_64_3 0xdb0c2e0d64f98fa7
-#define CONST_H07_64_3 0x47b5481dbefa4fa4
-
-// Startup values for SHA512 only
-#define CONST_H00_64_5 0x6a09e667f3bcc908
-#define CONST_H01_64_5 0xbb67ae8584caa73b
-#define CONST_H02_64_5 0x3c6ef372fe94f82b
-#define CONST_H03_64_5 0xa54ff53a5f1d36f1
-#define CONST_H04_64_5 0x510e527fade682d1
-#define CONST_H05_64_5 0x9b05688c2b3e6c1f
-#define CONST_H06_64_5 0x1f83d9abfb41bd6b
-#define CONST_H07_64_5 0x5be0cd19137e2179
 
 struct sha3_ctx {
   struct internal_sha_ctx common_ctx;
@@ -161,14 +126,6 @@ struct sha3_ctx {
     __asm mov     int ptr Var + 4, edx \
   }
 
-// Value of VarFr is copied into VarTo. edx:eax
-// On exit edx:eax contain VarFr value.
-#define MOV64(VarTo, VarFr) __asm \
-  { \
-    LOAD64(VarFr) \
-    STORE64(VarTo) \
-  }
-
 // Performs AND edx:eax, Var.
 // On exit result is in edx:eax
 #define AND64(Var) __asm \
@@ -224,31 +181,6 @@ struct sha3_ctx {
     __asm mov DWORD PTR Var, eax \
     __asm shr edx, cl \
     __asm mov DWORD PTR Var + 4, edx \
-    __asm pop ecx \
-  }
-
-//
-// Cnt == 0 : 63
-//
-// Performs SHL Var, Cnt. Result is stored in Var
-// On exit edx:eax contain shifted Var value.
-//
-#define SHL64(Var, Cnt) __asm \
-  { \
-    __asm push ecx \
-    LOAD64 Var \
-    __asm mov ecx, Cnt \
-    __asm cmp ecx, 32 \
-    __asm jb shl64_1 \
-    __asm mov edx, eax \
-    __asm mov eax, 0 \
-    __asm sub ecx, 32 \
-    __asm shl64_1:         \
-    __asm shld edx, eax, cl \
-    __asm mov DWORD PTR Var + 4, edx  \
-    __asm shl eax, cl \
-    __asm mov DWORD PTR Var, eax \
- \
     __asm pop ecx \
   }
 
@@ -449,30 +381,6 @@ struct sha3_ctx {
  *
  *  Description:  Sets Wt for one given index t
  */
-#define SetWt64 __asm \
-  { \
-    __asm cmp edi, 16 \
-    __asm jae setwt64_1 \
-    LOAD64([ebx][edi * 8]) \
-    BSWAP64  \
-    STORE64(VarW0_79[edi * 8])  \
-    __asm jmp beyondFunction \
-    __asm setwt64_1: \
-    /* Result in edx:eax */ \
-    F_SSIG1_64(VarW0_79[edi * 8 - 2 * 8]) \
-    /* Wt-7 */ \
-    ADD64(VarW0_79[edi * 8 - 7 * 8])  \
-    /* Wt-16 */ \
-    ADD64(VarW0_79[edi * 8 - 16 * 8])  \
-    /* VarT2 is temporary var for level 2 operations */ \
-    STORE64(VarT2)  \
-    /* result in edx:eax */ \
-    F_SSIG0_64(VarW0_79[edi * 8 - 15 * 8])  \
-    /* Result in edx:eax */ \
-    ADD64(VarT2)  \
-    STORE64(VarW0_79[edi * 8])  \
-    __asm beyondFunction: \
-  }
 
 /*
  *  Input:  edi - index of Wt variable
@@ -483,19 +391,6 @@ struct sha3_ctx {
  *
  *  Description:  Computes T1 variable
  */
-#define SetT1_64 __asm \
-  { \
-    F_BSIG1_64 \
-    ADD64(VarH) \
-    ADD64(ConstK0_79[edi * 8]) \
-    /* Wt */ \
-    ADD64(VarW0_79[edi * 8]) \
-    /* VarT2 is temporary var for level 2 operations */ \
-    STORE64(VarT2) \
-    F_CH64 \
-    ADD64(VarT2) \
-    STORE64(T1) \
-  }
 
 /*
  *  Input:  edi - index of Wt variable
@@ -506,14 +401,5 @@ struct sha3_ctx {
  *
  *  Description:  Computes T2 variable
  */
-#define SetT2_64 __asm \
-  { \
-    F_BSIG0_64 \
-    /* VarT2 is temporary var for level 2 operations */ \
-    STORE64(VarT2) \
-    F_MAJ64 \
-    ADD64(VarT2) \
-    STORE64(T2) \
-  }
 
 #endif

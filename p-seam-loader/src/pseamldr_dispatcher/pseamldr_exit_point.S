@@ -40,7 +40,7 @@ pseamldr_exit_point:
     movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+8,   %rcx
     movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+16,  %rdx
     movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+24,  %rbx
-    movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+32,  %rsp // not actually needed
+    // RSP is restored by uCode
     movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+40,  %rbp
     movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+48,  %rsi
     movq %gs:PSEAMLDR_DATA_VMM_GPRS_STATE_OFFSET+56,  %rdi

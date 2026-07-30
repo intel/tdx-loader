@@ -14,21 +14,12 @@
 // OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
 // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
+// OR OTHER LIABILITY,` WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
 // OR OTHER DEALINGS IN THE SOFTWARE.                                            
 //                                                                               
 // SPDX-License-Identifier: MIT
-/*****************************************************************************
- **
- **   Copyright (C) 2015-2021 Intel Corporation. All rights reserved.
- **
- **  The information and source code contained herein is the exclusive
- **  property of Intel Corporation and may not be disclosed, examined
- **  or reproduced in whole or in part without explicit written authorization
- **  from the company.
- **
- *****************************************************************************/
+
 /******************************************************************************
  *  Filename:   PE2BINx.H (for SKL and newer projects)                        *
  *****************************************************************************/
@@ -234,6 +225,7 @@ DWORD AcmVersionModuleOffset  = 0x24;
 #define ACM_VERSION_0 0x0
 #define ACM_VERSION_3 0x30000
 #define ACM_VERSION_4 0x40000
+#define ACM_VERSION_5 0x50004
 
 // These values are calculated based on the ACM specification
 #define ACM_HEADER_0_SIZE 0x4C0

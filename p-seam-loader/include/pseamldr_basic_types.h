@@ -113,5 +113,7 @@ typedef union
 
 #define MIN(A,B) ( (A) < (B) ? (A) : (B) )
 
+#define MAX(A,B) ( (A) > (B) ? (A) : (B) )
+
 #endif // __PSEAMLDR_BASIC_TYPES_H_INCLUDED__
 

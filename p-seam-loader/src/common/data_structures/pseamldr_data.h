@@ -136,7 +136,7 @@ typedef struct PACKED system_info_s
     ia32_tme_activate_t ia32_tme_activate;
 } system_info_t;
 
-#define MAX_NUM_OF_LPS              1024
+#define MAX_NUM_OF_LPS              2048
 #define MAX_NUM_OF_WBINVD_DOMAINS   8
 
 #define MAX_HKIDS 2048
@@ -196,6 +196,8 @@ typedef struct pseamldr_data_s
     uint32_t              cleanup_lps_per_domain[MAX_NUM_OF_WBINVD_DOMAINS];
 
     uint32_t              x2apic_pkg_id_shift_count;
+
+    uint64_t              prev_handoff_data_size;
 
 #ifdef DEBUGFEATURE_TDX_DBG_TRACE
     uint32_t              local_dbg_msg_num;

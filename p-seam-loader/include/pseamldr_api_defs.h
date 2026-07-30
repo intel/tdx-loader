@@ -162,7 +162,7 @@ typedef struct seamldr_info_s
     uint16_t     build_num;
     uint16_t     minor;
     uint16_t     major;
-    uint16_t     reserved_0;
+    uint16_t     update;
     uint32_t     acm_x2apic;
     uint32_t     num_remaining_updates;
     seamextend_t seamextend;

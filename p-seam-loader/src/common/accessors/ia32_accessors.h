@@ -44,7 +44,8 @@ _STATIC_INLINE_ bool_t ia32_rdrand64(uint64_t* rand_out)
 
     _ASM_VOLATILE_("rdrandq %0 \n"
                    "pushfq; popq %1\n"
-                   : "=r" (rand), "=r" (rflags.raw));
+                   : "=r" (rand), "=r" (rflags.raw)
+                   : : "memory");
 
     *rand_out = rand;
 
@@ -78,17 +79,18 @@ _STATIC_INLINE_ void ia32_cpuid(uint32_t leaf, uint32_t subleaf, uint32_t *eax, 
                        "=c" (*ecx),        //          ecx = %ecx
                        "=d" (*edx)         //          edx = %edx
                      : "a"  (leaf),        // Inputs:  eax = leaf
-                       "c"  (subleaf) );   //          ecx = subleaf
+                       "c"  (subleaf)
+                     : "memory");   //          ecx = subleaf
 }
 
 _STATIC_INLINE_ void ia32_clear_ac( void )
 {
-	_ASM_VOLATILE_ ("clac;":::"cc");
+	_ASM_VOLATILE_ ("clac;":::"cc", "memory");
 }
 
 _STATIC_INLINE_ void ia32_set_ac( void )
 {
-	_ASM_VOLATILE_ ("stac;":::"cc");
+	_ASM_VOLATILE_ ("stac;":::"cc", "memory");
 }
 
 /**
@@ -96,48 +98,48 @@ _STATIC_INLINE_ void ia32_set_ac( void )
  */
 _STATIC_INLINE_ void ia32_ud2( void )
 {
-    _ASM_VOLATILE_ ("ud2" ::: ) ;
+    _ASM_VOLATILE_ ("ud2" ::: "memory") ;
 }
 
 _STATIC_INLINE_ uint64_t ia32_rdmsr(uint64_t addr)
 {
     uint32_t low,high;
-    _ASM_VOLATILE_ ("rdmsr" : "=a"(low), "=d"(high) : "c"(addr));
+    _ASM_VOLATILE_ ("rdmsr" : "=a"(low), "=d"(high) : "c"(addr) : "memory");
     return (uint64_t)((((uint64_t)(high)) << 32) | (uint64_t)(low));
 }
 
 _STATIC_INLINE_ uint64_t ia32_rdmsr_with_input(uint64_t addr, uint64_t input)
 {
     uint32_t low,high;
-    _ASM_VOLATILE_ ("rdmsr" : "=a"(low), "=d"(high) : "a"((uint32_t)input), "d"((uint32_t)(input >> 32)), "c"(addr));
+    _ASM_VOLATILE_ ("rdmsr" : "=a"(low), "=d"(high) : "a"((uint32_t)input), "d"((uint32_t)(input >> 32)), "c"(addr) : "memory");
     return (uint64_t)((((uint64_t)(high)) << 32) | (uint64_t)(low));
 }
 
 _STATIC_INLINE_ void ia32_wrmsr(uint64_t addr, uint64_t value)
 {
-    _ASM_VOLATILE_ ("wrmsr" : : "a"((uint32_t)value), "d"((uint32_t)(value >> 32)), "c"(addr));
+    _ASM_VOLATILE_ ("wrmsr" : : "a"((uint32_t)value), "d"((uint32_t)(value >> 32)), "c"(addr) : "memory");
 }
 
 _STATIC_INLINE_ void ia32_out16( uint16_t port, uint16_t val )
 {
-    _ASM_VOLATILE_ ("outw %0,%w1" : : "a" (val), "dN" (port));
+    _ASM_VOLATILE_ ("outw %0,%w1" : : "a" (val), "dN" (port) : "memory");
 }
 
 _STATIC_INLINE_ void ia32_pause( void )
 {
-    _ASM_VOLATILE_ ("pause" ) ;
+    _ASM_VOLATILE_ ("pause" :: : "memory") ;
 }
 
 _STATIC_INLINE_ void ia32_out8( uint16_t port, uint8_t val )
 {
-    _ASM_VOLATILE_ ("outb %0,%w1" : : "a" (val), "dN" (port));
+    _ASM_VOLATILE_ ("outb %0,%w1" : : "a" (val), "dN" (port) : "memory");
 }
 
 _STATIC_INLINE_ uint8_t ia32_in8( uint16_t port )
 {
     uint8_t v;
 
-    _ASM_VOLATILE_ ("inb %w1,%0" : "=a" (v) : "Nd" (port));
+    _ASM_VOLATILE_ ("inb %w1,%0" : "=a" (v) : "Nd" (port) : "memory");
 
     return v;
 }
@@ -147,7 +149,7 @@ _STATIC_INLINE_ uint64_t ia32_rdtsc( void )
     uint32_t a, d;
 
     _ASM_VOLATILE_ ("rdtsc"
-                   : "=a"(a), "=d"(d));
+                   : "=a"(a), "=d"(d) : : "memory");
     return ( ((uint64_t) d << 32) | (uint64_t) a );
 }
 
@@ -167,7 +169,7 @@ _STATIC_INLINE_ uint64_t bit_scan_forward64(uint64_t mask)
     _ASM_VOLATILE_ ("bsfq %1, %0 \n"
                         :"=r"(lsb_position)
                         :"r"(mask)
-                        :);
+                        : "memory");
 
     return lsb_position;
 }
@@ -178,7 +180,7 @@ _STATIC_INLINE_ uint64_t bit_scan_reverse64(uint64_t mask)
     _ASM_VOLATILE_ ("bsrq %1, %0 \n"
                         :"=r"(msb_position)
                         :"r"(mask)
-                        :);
+                        : "memory");
 
     return msb_position;
 }
@@ -228,7 +230,7 @@ _STATIC_INLINE_ uint64_t ia32_mktme_key_program(mktme_key_program_t *key_program
         #endif
         "pushfq\n"
         "popq %%rcx"
-        : "=a"(error_code), "=c"(ret_flags.raw) : "a"(0), "b"(key_program_addr) : "cc");
+        : "=a"(error_code), "=c"(ret_flags.raw) : "a"(0), "b"(key_program_addr) : "cc", "memory");
     // On return: ZF=0 indicates success; ZF=1 indicates failure (error code in RAX).  ZF is bit 6 in EFLAGS
     return (ret_flags.zf) ? error_code : 0;
 }
@@ -254,7 +256,7 @@ _STATIC_INLINE_ void store_xmms_in_buffer(uint128_t xmms[16])
             "movdqa %%xmm14, 0xE0(%0)\n"
             "movdqa %%xmm15, 0xF0(%0)\n"
 
-        : : "r"(xmms));
+        : : "r"(xmms) : "memory");
 }
 
 _STATIC_INLINE_ void load_xmms_from_buffer(const uint128_t xmms[16])
@@ -277,7 +279,7 @@ _STATIC_INLINE_ void load_xmms_from_buffer(const uint128_t xmms[16])
             "movdqa 0xE0(%0), %%xmm14\n"
             "movdqa 0xF0(%0), %%xmm15\n"
 
-        : : "r"(xmms));
+        : : "r"(xmms) : "memory");
 }
 
 #endif /* SRC_COMMON_ACCESSORS_IA32_ACCESSORS_H_ */

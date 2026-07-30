@@ -1,23 +1,23 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #include "common.h"
@@ -25,8 +25,10 @@
 #include "Header.h"
 #include "msr.h"
 #include "common32.h"
+#include "accessors.h"
 
 #define PAGE_SIZE _4KB
+#define SHT_LEFT64(NUMBER, shift_cnt) (((UINT64)(NUMBER)) << (shift_cnt))
 
 static void MapPagingStructure(IA32E_PXE_T *ParentPXE, IA32E_PAGING_TABLE_T *ChildPXBase)
 {
@@ -77,27 +79,74 @@ static BOOL IsCodeAcmPage(COM_DATA *PE2BIN_Com_Data, UINT32 Page)
   return FALSE;
 }
 
-#define MAX_ACM_SIZE (256 * 1024)
+#define MAX_ACM_SIZE   (256 * 1024)
+#define RDSEED_RETRIES 10
 
 __declspec(align(4096)) SEAMLDR_PAGING_TABLE_T SeamldrPagingTable;
 
 PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
 {
   COM_DATA *PE2BIN_Com_Data = (COM_DATA *)((UINT32)AcmEntryPoint - sizeof(COM_DATA));
+  UINT32 RandValue = 0;
 
-  (void) pCom64; // unused
+  for (UINT8 Idx = 0; Idx < RDSEED_RETRIES; Idx++) {
+    if (RdSeed32(&RandValue) != 0) {
+      break;
+    }
+    if (Idx == RDSEED_RETRIES - 1) {
+      TRACE("Can't generate random number\n");
+      _ud2();
+    }
+  }
+
+  // add ASLR to the fixup
+  UINT32 AcmAslr = RandValue & ((1 << ASLR_BITS) - 1);
+  UINT32 Pml4AslrVal = (AcmAslr >> 7);
+  UINT32 PdptAslrVal = (AcmAslr & (BIT7 - 1));
+  UINT32 PdptAslrMask = (PdptAslrVal << 2);
+
+  UINT8 *CurRelocPtr = stackStart + 0x44;
+  UINT32 CurRelocPos = 0;
+  UINT32 CurRelocMask = BIT18 - 1;
+
+  pCom64->AcmAslrMask = (UINT64)AcmAslr << ASLR_BITS_POS;
+  pCom64->PseamldrAslrVal = (UINT16)(RandValue >> 16);
+
+  TRACE("Number of fixups (total): %x\n", *(UINT32 *)(stackStart + 0x40));
+  TRACE("ACMASLR: 0x%x\n", AcmAslr);
+
+  for (UINT32 Idx = 0; Idx < *(UINT32 *)(stackStart + 0x40); Idx++) {
+    UINT32 CurRelocVal = *CurRelocPtr;
+    CurRelocVal >>= CurRelocPos;
+    CurRelocVal &= CurRelocMask;
+    UINT64 *CurRelocTarget = (UINT64 *)((UINT8 *)CurRelocVal + AcmBase);
+    if ((UINT32)CurRelocTarget >= PE2BIN_Com_Data->Data64Start) {
+      *CurRelocTarget |= pCom64->AcmAslrMask;
+    }
+    CurRelocPos += 2;
+    CurRelocPos &= 0xF;
+    CurRelocPtr += 2;
+    if (CurRelocPos == 0) {
+      CurRelocPtr += 2;
+    }
+  }
 
   fillMemory((UINT8 *)&SeamldrPagingTable, 0, sizeof(SEAMLDR_PAGING_TABLE_T));
 
   // We will use index 0 for PML5 and PML4 because we aren't going to map linear addresses above 4GB
   MapPagingStructure(&SeamldrPagingTable.Pml5.PT[0], &SeamldrPagingTable.Pml4);
   MapPagingStructure(&SeamldrPagingTable.Pml4.PT[0], &SeamldrPagingTable.Pdpt);
+  MapPagingStructure(&SeamldrPagingTable.Pml4.PT[Pml4AslrVal], &SeamldrPagingTable.Pdpt);
 
   // First indexes 0-3 in PDPT covers the whole lower 4 GB (each PD table cover 512 entries of 2MB, there are 4 PD tables)
-  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[0], &SeamldrPagingTable.Pd[0]);
-  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[1], &SeamldrPagingTable.Pd[1]);
-  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[2], &SeamldrPagingTable.Pd[2]);
-  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[3], &SeamldrPagingTable.Pd[3]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[0], &SeamldrPagingTable.Pd32[0]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[1], &SeamldrPagingTable.Pd32[1]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[2], &SeamldrPagingTable.Pd32[2]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[3], &SeamldrPagingTable.Pd32[3]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[PdptAslrMask | 0], &SeamldrPagingTable.Pd[0]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[PdptAslrMask | 1], &SeamldrPagingTable.Pd[1]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[PdptAslrMask | 2], &SeamldrPagingTable.Pd[2]);
+  MapPagingStructure(&SeamldrPagingTable.Pdpt.PT[PdptAslrMask | 3], &SeamldrPagingTable.Pd[3]);
 
   // We will fill the entries in PD tables later, at this point they are empty and don't map anything
 
@@ -118,19 +167,25 @@ PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
   IA32E_PAGING_TABLE_T *Pd = &SeamldrPagingTable.Pd[PdptIdx];
 
   MapPagingStructure(&Pd->PT[PdIdx], &SeamldrPagingTable.Pt[0]);
+  IA32E_PAGING_TABLE_T *Pd32 = &SeamldrPagingTable.Pd32[PdptIdx];
+
+  MapPagingStructure(&Pd32->PT[PdIdx], &SeamldrPagingTable.Pt32[0]);
 
   UINT32 PtIdx = ((AcmBase >> 12) & 0x1FF);
   UINT32 LastPtIdx = PtIdx + (rounded(AcmSize, PAGE_SIZE) / PAGE_SIZE);
   UINT32 CurrentAcmPageToMap = AcmBase;
 
   IA32E_PAGING_TABLE_T *Pt = &SeamldrPagingTable.Pt[0];
+  IA32E_PAGING_TABLE_T *Pt32 = &SeamldrPagingTable.Pt32[0];
 
   // Map the ACM 4K pages until the last index in the PT table (must be 1:1 mapping)
   for (UINT32 i = PtIdx; i < ((LastPtIdx < 512) ? LastPtIdx : 512); i++) {
     if (IsCodeAcmPage(PE2BIN_Com_Data, CurrentAcmPageToMap)) {
-      Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, FALSE, TRUE, TRUE); // Not-writable, WB memtype, Executable
+      Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, FALSE, TRUE, TRUE);   // Not-writable, WB memtype, Executable
+      Map4KPage(&Pt32->PT[i], CurrentAcmPageToMap, FALSE, TRUE, TRUE); // Not-writable, WB memtype, Executable
     } else {
-      Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, TRUE, TRUE, FALSE); // Writable, WB memtype, Non-executable
+      Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, TRUE, TRUE, FALSE);   // Writable, WB memtype, Non-executable
+      Map4KPage(&Pt32->PT[i], CurrentAcmPageToMap, TRUE, TRUE, FALSE); // Writable, WB memtype, Non-executable
     }
     CurrentAcmPageToMap += PAGE_SIZE;
   }
@@ -142,14 +197,16 @@ PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
       // We won't span over the 4GB boundary in Acm, so it's ok to just +1 the PDPT index
       PdptIdx = PdptIdx + 1;
       Pd = &SeamldrPagingTable.Pd[PdptIdx];
+      Pd32 = &SeamldrPagingTable.Pd32[PdptIdx];
       PdIdx = 0;
     } else {
       PdIdx = PdIdx + 1;
     }
 
     MapPagingStructure(&Pd->PT[PdIdx], &SeamldrPagingTable.Pt[1]);
-
     Pt = &SeamldrPagingTable.Pt[1];
+    MapPagingStructure(&Pd32->PT[PdIdx], &SeamldrPagingTable.Pt32[1]);
+    Pt32 = &SeamldrPagingTable.Pt32[1];
 
     PtIdx = 0;
     LastPtIdx = LastPtIdx - 512;
@@ -157,9 +214,11 @@ PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
     // Map the rest of the ACM 4K pages
     for (UINT32 i = PtIdx; i < LastPtIdx; i++) {
       if (IsCodeAcmPage(PE2BIN_Com_Data, CurrentAcmPageToMap)) {
-        Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, FALSE, TRUE, TRUE); // Not-writable, WB memtype, Executable
+        Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, FALSE, TRUE, TRUE);   // Not-writable, WB memtype, Executable
+        Map4KPage(&Pt32->PT[i], CurrentAcmPageToMap, FALSE, TRUE, TRUE); // Not-writable, WB memtype, Executable
       } else {
-        Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, TRUE, TRUE, FALSE); // Writable, WB memtype, Non-executable
+        Map4KPage(&Pt->PT[i], CurrentAcmPageToMap, TRUE, TRUE, FALSE);   // Writable, WB memtype, Non-executable
+        Map4KPage(&Pt32->PT[i], CurrentAcmPageToMap, TRUE, TRUE, FALSE); // Writable, WB memtype, Non-executable
       }
       CurrentAcmPageToMap += PAGE_SIZE;
     }
@@ -175,8 +234,8 @@ PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
 
   // Virtual base is calculated as follows:
   // PML5 and PML4 index is 0. PDPT index as chosen. PD index 0, PT index is 0
-  PtCtx->VirtualBaseFor4KMappings = ((UINT64)PdptIdx << 30);
-  PtCtx->PtBaseFor4KMappings = (UINT64)(UINTPTR)&SeamldrPagingTable.Pt[2];
+  PtCtx->VirtualBaseFor4KMappings = pCom64->AcmAslrMask | ((UINT64)PdptIdx << 30);
+  PtCtx->PtBaseFor4KMappings = (UINT64)(UINTPTR)&SeamldrPagingTable.Pt[2] | pCom64->AcmAslrMask;
   PtCtx->NextFreePtIdx = 0;
 
   // The last (third or fourth) unused PD table will be used for 2MB mapping in the system (not necessary 1 to 1)
@@ -185,18 +244,19 @@ PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
 
   // Virtual base is calculated as follows:
   // PML5 and PML4 index is 0. PDPT index as chosen. PD index 0
-  PtCtx->VirtualBaseFor2MBMappings = (PdptIdx << 30);
-  PtCtx->PdBaseFor2MBMappings = (UINT64)(UINTPTR)&SeamldrPagingTable.Pd[PdptIdx];
+  PtCtx->VirtualBaseFor2MBMappings = pCom64->AcmAslrMask | ((UINT64)PdptIdx << 30);
+  PtCtx->PdBaseFor2MBMappings = (UINT64)(UINTPTR)&SeamldrPagingTable.Pd[PdptIdx] | pCom64->AcmAslrMask;
   PtCtx->NextFreePdIdx = 0;
+  PtCtx->SeamldrPagingTable = (UINT64)(UINTPTR) &SeamldrPagingTable | pCom64->AcmAslrMask;
 
   // Prior to enabling paging, the SEAMLDR should configure the IA32_PAT MSR with its reset default value 0x0007040600070406 (i.e.PAT0 = WB, PAT7 = UC).
   writeMsr(MSR_IA32_PAT, 0x00070406UL, 0x00070406UL);
 
   // Load CR3 with the PML4/5 base - the SEAMLDR will run with either 4-level or 5-level paging, depending on the original level of the OS
   if (SeamldrCom64Data.OriginalCR4 & CR4_LA57) {
-    __writecr3(&SeamldrPagingTable.Pml5);
+    __writecr3((UINT32) &SeamldrPagingTable.Pml5);
   } else {
-    __writecr3(&SeamldrPagingTable.Pml4);
+    __writecr3((UINT32) &SeamldrPagingTable.Pml4);
   }
 
   // Set EFER.LME to re-enable ia32-e
@@ -208,6 +268,10 @@ PT_CTX *EstablishSeamldrPaging(SEAMLDR_COM64_DATA *pCom64, IN OUT PT_CTX *PtCtx)
 
   // Enable paging
   __writecr0(__readcr0() | CR0_PG | CR0_WP);
+
+  SeamldrCom64Data.HeaderStart |= pCom64->AcmAslrMask;
+  SeamldrCom64Data.PseamldrOffset |= pCom64->AcmAslrMask;
+  SeamldrCom64Data.PseamldrConstsOffset |= pCom64->AcmAslrMask;
 
   return PtCtx;
 }

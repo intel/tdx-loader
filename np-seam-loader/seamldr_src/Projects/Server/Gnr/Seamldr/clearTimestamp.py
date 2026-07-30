@@ -19,6 +19,8 @@
 # OR OTHER DEALINGS IN THE SOFTWARE.                                            
 #                                                                               
 # SPDX-License-Identifier: MIT
+
+
 import sys
 import struct
 import re
@@ -192,8 +194,10 @@ class EFI_IMAGE_SECTION_HEADER(Structure):
         ('Characteristics',       c_uint32),
         ]
 
-if  len(sys.argv) != 5: 
-    print ("usage: " + sys.argv[0] + " <map file> <exe file> <pseamldr module> <pseamldr consts>")
+print ('Start clearTimestamp')
+
+if  len(sys.argv) != 2: 
+    print ("usage: " + sys.argv[0] + "<exe file>")
     exit(1);
 	
 class Offset:
@@ -201,25 +205,7 @@ class Offset:
 		self.section = section
 		self.offset = offset
 
-f_map = open(sys.argv[1], 'r')
-map_txt = f_map.read()
-f_map.close()
-regex_result = re.search("([0-9a-f]+):([0-9a-f]+)\s+_PSeamldrConstAsm", map_txt)
-PseamldrConst = Offset(int(regex_result.group(1), 16), int(regex_result.group(2),16))
-regex_result = re.search("([0-9a-f]+):([0-9a-f]+)\s+_PSeamldrSizeAsm", map_txt)
-PseamldrSize = Offset(int(regex_result.group(1), 16), int(regex_result.group(2),16))
-regex_result = re.search("([0-9a-f]+):([0-9a-f]+)\s+_PSeamldrAsm", map_txt)
-Pseamldr = Offset(int(regex_result.group(1), 16), int(regex_result.group(2),16))
-#print (PseamldrOffset)
-#print (regex_result.group(1))
-f_pseamldr = open(sys.argv[3], 'rb')
-pseamldr_bin = f_pseamldr.read()
-f_pseamldr.close()
-#print (len(pseamldr_bin))
-
-f_exe = open(sys.argv[2], 'rb+')
-f_exe.seek(0, 2)
-#print (f_exe.tell())
+f_exe = open(sys.argv[1], 'rb+')
 f_exe.seek(0)
 exe_contents = f_exe.read()
 exe_array = bytearray(exe_contents)
@@ -245,32 +231,18 @@ else :
   print ('ERROR: Invalid exe image (Machine - 0x%x)'%(PeHdr.FileHeader.Machine))
   sys.exit(1)
   
-PeSection = EFI_IMAGE_SECTION_HEADER.from_buffer(exe_array, PeSectionOffset + sizeof(EFI_IMAGE_SECTION_HEADER) * (PseamldrConst.section - 1))
-PseamldrConstExeOffset = PeSection.PointerToRawData + PseamldrConst.offset  
-
-PeSection = EFI_IMAGE_SECTION_HEADER.from_buffer(exe_array, PeSectionOffset + sizeof(EFI_IMAGE_SECTION_HEADER) * (PseamldrSize.section - 1))
-PseamldrSizeOffset = PeSection.PointerToRawData + PseamldrSize.offset  
-
-PeSection = EFI_IMAGE_SECTION_HEADER.from_buffer(exe_array, PeSectionOffset + sizeof(EFI_IMAGE_SECTION_HEADER) * (Pseamldr.section - 1))
-PseamldrOffset = PeSection.PointerToRawData + Pseamldr.offset  
+ZeroedTimestamp = False
+for Index in range (0, PeHdr.FileHeader.NumberOfSections, 1):
+	PeSection = EFI_IMAGE_SECTION_HEADER.from_buffer (exe_array, PeSectionOffset + sizeof(EFI_IMAGE_SECTION_HEADER) * Index)    
+	if bytes(PeSection.Name) == b".uncomme":
+		ZeroedTimestamp = True
+		exe_array[PeSection.PointerToRawData + 4 : PeSection.PointerToRawData + 8] = [0, 0, 0, 0]
+		f_exe.write(exe_array)
   
-#print (len(exe_contents))
-#print (len(exe_array))
-#print (exe_array[500])
-exe_array[PseamldrOffset : PseamldrOffset + len(pseamldr_bin)] = pseamldr_bin
-exe_array[PseamldrSizeOffset : PseamldrSizeOffset + 4] = len(pseamldr_bin).to_bytes(4, 'little')
-#print (exe_array[500])
-#print(type(exe_contents))
-
-f_consts = open(sys.argv[4], 'rb')
-consts_bin = f_consts.read()
-f_consts.close()
-assert(len(consts_bin) == 48)
-exe_array[PseamldrConstExeOffset : PseamldrConstExeOffset + len(consts_bin)] = consts_bin
-f_exe.write(exe_array)
 f_exe.close()
-print("PSeamldrConstAsm offset: " + hex(PseamldrConstExeOffset))
-print("PSeamldrSizeAsm offset: " + hex(PseamldrSizeOffset))
-print("PSeamldrAsm offset: " + hex(PseamldrOffset))
+print ("Clear timestamp done!")
+if ZeroedTimestamp:
+	exit(0)
+else:
+	exit(1)
 
-print ("Put seamldr done!")

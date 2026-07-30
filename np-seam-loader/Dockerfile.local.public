@@ -1,0 +1,137 @@
+# escape=`
+# OFFLINE/LOCAL variant: VS install uses a pre-downloaded offline layout, so the
+# container build makes zero network calls for VS packages. Recommended when the
+# build host/container has no (or unreliable) outbound internet access.
+#
+# Prerequisite (run once, on a host with normal internet access, NOT inside a
+# container). If that host is behind a corporate proxy, add
+# `-Proxy http://your-proxy:port` to the Invoke-WebRequest call:
+#   Invoke-WebRequest -Uri https://aka.ms/vs/16/release/vs_professional.exe `
+#       -OutFile C:\vs_professional.exe
+#   C:\vs_professional.exe --layout C:\vs_layout `
+#       --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools `
+#       --add Microsoft.VisualStudio.Workload.VCTools `
+#       --add Microsoft.VisualStudio.Workload.MSBuildTools `
+#       --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+#       --add Microsoft.VisualStudio.Workload.AzureBuildTools `
+#       --add Microsoft.VisualStudio.Workload.NativeDesktop `
+#       --add Microsoft.VisualStudio.Component.VC.140 `
+#       --lang en-US --quiet --wait
+# Note: Microsoft.VisualStudio.Component.Windows10SDK.18362 has been observed to be
+# rejected by newer bootstrapper catalogs ("package is not recognized"). If you need a
+# Windows 10 SDK, add a currently-available version (e.g. Windows10SDK.19041) instead.
+#
+# Then place the resulting vs_layout\ folder next to this Dockerfile as build context.
+#
+# IF THE BUILD MACHINE ITSELF IS BEHIND A CORPORATE PROXY (needed for the chocolatey/
+# python/git install step only - the VS install above is fully offline/local and
+# needs no proxy), build with (replace with your own proxy host/port - these are
+# Docker's predefined proxy build-args, auto-injected as env vars into every RUN step):
+#   docker build `
+#       --build-arg HTTP_PROXY=http://your-proxy:port `
+#       --build-arg HTTPS_PROXY=http://your-proxy:port `
+#       --build-arg NO_PROXY="localhost,127.0.0.1" `
+#       -f Dockerfile.local.public -t <tag> .
+FROM mcr.microsoft.com/dotnet/framework/runtime:4.8-windowsservercore-ltsc2022 AS base
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+# Install chocolatey, python3, git and make
+ADD https://community.chocolatey.org/api/v2/package/chocolatey/2.3.0 chocolatey.2.3.0.nupkg
+ADD https://community.chocolatey.org/install.ps1 install.ps1
+RUN powershell -command `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; `
+    .\Install.ps1 -ChocolateyDownloadUrl chocolatey.2.3.0.nupkg; `
+    Remove-Item chocolatey.2.3.0.nupkg; `
+    Remove-Item install.ps1 `
+    && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin" `
+    && choco install python3 -y `
+    && py -m pip install --upgrade pip `
+    && py -m pip uninstall --yes setuptools `
+    && py -m pip install "setuptools>=65.5.1" `
+    && choco install git -y `
+    && choco install make -y
+
+# Restore the default Windows shell for correct batch processing.
+SHELL ["powershell", "-NoProfile", "-Command"]
+
+# Native Win32 apps use WinHTTP/WinINET, not HTTP_PROXY env vars. The VS install below
+# is fully offline and needs no proxy, but this is harmless/no-op to keep in case any
+# other native tool in this image needs proxy access later.
+RUN if ($env:HTTP_PROXY -or $env:HTTPS_PROXY) { `
+        $proxyServer = "http=$($env:HTTP_PROXY);https=$($env:HTTPS_PROXY)"; `
+        $bypass = if ($env:NO_PROXY) { $env:NO_PROXY -replace ',', ';' } else { 'localhost;127.0.0.1' }; `
+        Write-Host "Setting WinHTTP proxy: $proxyServer (bypass: $bypass)"; `
+        netsh winhttp set proxy proxy-server=$proxyServer bypass-list=$bypass `
+    } else { `
+        Write-Host 'No proxy build-args supplied - skipping WinHTTP proxy configuration.' `
+    }
+
+# Install Visual Studio 2019 + 2015 build tools from a pre-downloaded offline layout
+# (see prerequisite steps above) so the container build makes zero network calls
+# for VS packages.
+COPY vs_layout C:\vs_layout
+
+# Offline signature verification needs the layout's root certs trusted locally -
+# without network access the installer can't build/verify the cert chain otherwise
+# (see: "Create a network install of Visual Studio" docs).
+RUN Get-ChildItem 'C:\vs_layout\certificates\*.cer' | ForEach-Object { `
+        Write-Host ('Importing certificate: ' + $_.FullName); `
+        Import-Certificate -FilePath $_.FullName -CertStoreLocation Cert:\LocalMachine\Root | Out-Null; `
+        Import-Certificate -FilePath $_.FullName -CertStoreLocation Cert:\LocalMachine\TrustedPublisher | Out-Null `
+    }
+
+# Fix for exit 5003 (OpcVerifier / cert check timeout): the bootstrapper only calls
+# OpcVerifier.Verify() on vs_installer.opc when the VS Installer already present in the
+# image is OLDER than the bootstrapper's embedded autoSelfUpdateMinVersion. That check
+# fetches CRL/OCSP URLs which hang and fail with no direct internet access (certutil's
+# ChainDisableUrlRetrieval does NOT help - OpcVerifier uses .NET managed cert
+# validation, not CAPI). Fix: pre-extract vs_installer.opc (a ZIP containing
+# Contents\setup.exe at exactly the version the bootstrapper expects) into the VS
+# Installer directory so client version == autoSelfUpdateMinVersion and the
+# bootstrapper skips OpcVerifier entirely.
+RUN $ErrorActionPreference='Stop'; `
+    $extractDir = 'C:\vs-installer-extracted'; `
+    Add-Type -AssemblyName System.IO.Compression.FileSystem; `
+    [System.IO.Compression.ZipFile]::ExtractToDirectory('C:\vs_layout\vs_installer.opc', $extractDir); `
+    $installerDir = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer'; `
+    Remove-Item -Path $installerDir -Recurse -Force -ErrorAction SilentlyContinue; `
+    New-Item -Path $installerDir -ItemType Directory -Force | Out-Null; `
+    Copy-Item -Path (Join-Path $extractDir 'Contents\*') -Destination $installerDir -Recurse -Force; `
+    Remove-Item -Path $extractDir -Recurse -Force -ErrorAction SilentlyContinue
+
+# Install using the local layout only (--noWeb). Note: the extracted setup.exe (used once
+# the pre-loaded VS Installer above takes over) does not accept the bootstrapper-only
+# --log flag - diagnostics on failure come from dd_*.log in TEMP instead.
+RUN $ErrorActionPreference='Stop'; `
+    $installer='C:\vs_layout\vs_professional.exe'; `
+    $args=@( `
+        '--noWeb','--quiet','--wait','--norestart','--nocache', `
+        '--add','Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools', `
+        '--add','Microsoft.VisualStudio.Workload.VCTools', `
+        '--add','Microsoft.VisualStudio.Workload.MSBuildTools', `
+        '--add','Microsoft.VisualStudio.Component.VC.Tools.x86.x64', `
+        '--add','Microsoft.VisualStudio.Workload.AzureBuildTools', `
+        '--add','Microsoft.VisualStudio.Workload.NativeDesktop', `
+        '--add','Microsoft.VisualStudio.Component.VC.140', `
+        '--remove','Microsoft.VisualStudio.Component.Windows10SDK.10240', `
+        '--remove','Microsoft.VisualStudio.Component.Windows10SDK.10586', `
+        '--remove','Microsoft.VisualStudio.Component.Windows10SDK.14393', `
+        '--remove','Microsoft.VisualStudio.Component.Windows81SDK' `
+    ); `
+    $proc = Start-Process -FilePath $installer -ArgumentList $args -Wait -PassThru; `
+    $rc = $proc.ExitCode; `
+    if ($rc -ne 0 -and $rc -ne 3010) { `
+        Write-Host ('ERROR: VS installer failed with exit code ' + $rc); `
+        Write-Host '===== dd_*.log files in TEMP ====='; `
+        $ddLogs = Get-ChildItem -Path (Join-Path $env:TEMP 'dd_*.log') -ErrorAction SilentlyContinue; `
+        if ($ddLogs) { foreach ($log in $ddLogs) { Write-Host ('----- ' + $log.FullName + ' -----'); Get-Content $log.FullName -ErrorAction SilentlyContinue } } `
+        else { Write-Host ('No dd_*.log found in ' + $env:TEMP) }; `
+        exit $rc `
+    }; `
+    if (-not (Test-Path 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\VC\Auxiliary\Build\vcvars64.bat')) { `
+        throw 'vcvars64.bat not found - VS install did not complete successfully' `
+    }; `
+    Remove-Item C:\vs_layout -Recurse -Force -ErrorAction SilentlyContinue

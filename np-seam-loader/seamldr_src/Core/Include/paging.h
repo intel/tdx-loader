@@ -1,41 +1,36 @@
-// Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
-// Permission is hereby granted, free of charge, to any person obtaining a copy  
-// of this software and associated documentation files (the "Software"),         
-// to deal in the Software without restriction, including without limitation     
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,      
-// and/or sell copies of the Software, and to permit persons to whom             
-// the Software is furnished to do so, subject to the following conditions:      
-//                                                                               
-// The above copyright notice and this permission notice shall be included       
-// in all copies or substantial portions of the Software.                        
-//                                                                               
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS       
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,   
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL      
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES             
-// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,      
-// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE            
-// OR OTHER DEALINGS IN THE SOFTWARE.                                            
-//                                                                               
+// Copyright (C) 2023 Intel Corporation
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom
+// the Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+// OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+// OR OTHER DEALINGS IN THE SOFTWARE.
+//
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
 #include <Common64.h>
 
-#define IA32_PG_P      1u
-#define IA32_PG_RW     (1u << 1)
-#define IA32_PG_U      (1u << 2)
-#define IA32_PG_WT     (1u << 3)
-#define IA32_PG_CD     (1u << 4)
-#define IA32_PG_A      (1u << 5)
-#define IA32_PG_D      (1u << 6)
-#define IA32_PG_PS     (1u << 7)
-#define IA32_PG_G      (1u << 8)
-#define IA32_PG_PAT_2M (1u << 12)
-#define IA32_PG_PAT_4K IA32_PG_PS
-#define IA32_PG_NX     (1ull << 63)
+#define IA32_PG_P  1u
+#define IA32_PG_RW (1u << 1)
+#define IA32_PG_U  (1u << 2)
+#define IA32_PG_A  (1u << 5)
+#define IA32_PG_D  (1u << 6)
+#define IA32_PG_PS (1u << 7)
+#define IA32_PG_NX (1ull << 63)
 
 typedef union IA32E_PXE_U {
   struct {
@@ -111,6 +106,8 @@ typedef struct {
   IA32E_PAGING_TABLE_T Pdpt;
   IA32E_PAGING_TABLE_T Pd[4];
   IA32E_PAGING_TABLE_T Pt[3];
+  IA32E_PAGING_TABLE_T Pd32[4];
+  IA32E_PAGING_TABLE_T Pt32[2];
 } SEAMLDR_PAGING_TABLE_T;
 
 extern SEAMLDR_PAGING_TABLE_T SeamldrPagingTable;
@@ -122,6 +119,7 @@ typedef struct PT_CTX_s {
   UINT64 VirtualBaseFor2MBMappings;
   UINT32 NextFreePtIdx;
   UINT32 NextFreePdIdx;
+  UINT64 SeamldrPagingTable;
 } PT_CTX;
 
 typedef struct {
@@ -149,6 +147,14 @@ typedef enum {
   PAGE_UC_MEMTYPE,
   PAGE_WB_MEMTYPE
 } PAGE_CACHING_TYPE;
+
+#define ASLR_BITS_POS 32
+#define ASLR_BITS     15
+#ifndef _SEAMLDR_VALIDATION_
+#define ACM_ASLR_MASK (((UINT64)(1 << ASLR_BITS) - 1) << ASLR_BITS_POS)
+#else
+#define ACM_ASLR_MASK 0
+#endif
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

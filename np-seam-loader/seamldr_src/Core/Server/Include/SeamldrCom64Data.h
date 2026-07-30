@@ -1,5 +1,5 @@
 // Copyright (C) 2023 Intel Corporation                                          
-//                                                                               
+//                                                                                
 // Permission is hereby granted, free of charge, to any person obtaining a copy  
 // of this software and associated documentation files (the "Software"),         
 // to deal in the Software without restriction, including without limitation     
@@ -63,10 +63,12 @@ typedef struct {
     UINT64 PseamldrOffset;
     UINT64 PseamldrConstsOffset;
     UINT8  NewGdtr[10];
+    UINT64 AcmAslrMask;
+    UINT16 PseamldrAslrVal;
 } SEAMLDR_COM64_DATA;
 
 // whenever the structure changes, don't forget to update the ASM!
-C_ASSERT(sizeof(SEAMLDR_COM64_DATA) == 0x94);
+C_ASSERT(sizeof(SEAMLDR_COM64_DATA) == 0x9E);
 
 
 
